@@ -115,7 +115,8 @@ function ProgressStep({ message, index, isLast }) {
 export default function Home() {
   const [form, setForm] = useState({
     empresa: '',
-    pais: 'Colombia',
+    url: '',
+    pais: '',
     idioma: 'Espanol',
     enfoque: 'Auto (el agente decide segun el perfil)',
     infoExtra: '',
@@ -260,11 +261,28 @@ export default function Home() {
                   />
                 </div>
 
+                {/* URL del sitio web */}
+                <div>
+                  <label htmlFor="url" className="block text-sm font-semibold text-brand-navy-text mb-2">
+                    Sitio web de la empresa <span className="font-normal text-brand-gray-mid">(opcional)</span>
+                  </label>
+                  <input
+                    id="url"
+                    type="url"
+                    name="url"
+                    value={form.url}
+                    onChange={handleChange}
+                    placeholder="Ej: https://www.gruponutresa.com"
+                    autoComplete="url"
+                    className="w-full px-4 py-3 rounded-xl border-2 border-brand-border bg-brand-page-bg text-brand-navy-text placeholder:text-brand-gray-mid focus:outline-none focus:border-brand-blue focus:bg-white focus:ring-4 focus:ring-brand-blue/10"
+                  />
+                </div>
+
                 {/* Pais + Idioma row */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
                     <label htmlFor="pais" className="block text-sm font-semibold text-brand-navy-text mb-2">
-                      Pais
+                      Pais <span className="font-normal text-brand-gray-mid">(opcional)</span>
                     </label>
                     <input
                       id="pais"
@@ -272,7 +290,8 @@ export default function Home() {
                       name="pais"
                       value={form.pais}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 rounded-xl border-2 border-brand-border bg-brand-page-bg text-brand-navy-text focus:outline-none focus:border-brand-blue focus:bg-white focus:ring-4 focus:ring-brand-blue/10"
+                      placeholder="Ej: Colombia, Mexico, Peru..."
+                      className="w-full px-4 py-3 rounded-xl border-2 border-brand-border bg-brand-page-bg text-brand-navy-text placeholder:text-brand-gray-mid focus:outline-none focus:border-brand-blue focus:bg-white focus:ring-4 focus:ring-brand-blue/10"
                     />
                   </div>
                   <div>

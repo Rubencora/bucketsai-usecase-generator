@@ -10,9 +10,15 @@ export async function collectInputs() {
     },
     {
       type: 'input',
+      name: 'url',
+      message: 'URL del sitio web de la empresa (opcional):',
+      default: '',
+    },
+    {
+      type: 'input',
       name: 'pais',
-      message: 'En que pais opera principalmente?',
-      default: 'Colombia',
+      message: 'En que pais opera principalmente? (dejar vacio para no especificar)',
+      default: '',
     },
     {
       type: 'list',
@@ -44,6 +50,7 @@ export async function collectInputs() {
 
   return {
     empresa: answers.empresa.trim(),
+    url: answers.url.trim(),
     pais: answers.pais.trim(),
     idioma: answers.idioma,
     enfoque: answers.enfoque,

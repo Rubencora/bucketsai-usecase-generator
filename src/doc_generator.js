@@ -176,11 +176,11 @@ function steps4(items) {
       width: { size: colW, type: WidthType.DXA },
       shading: { type: ShadingType.CLEAR, fill: i % 2 === 0 ? C.blueLight : C.pageBg },
       borders: NO_BORDERS,
-      margins: { top: 200, bottom: 200, left: 160, right: 160 },
+      margins: { top: 160, bottom: 160, left: 120, right: 120 },
       children: [
-        new Paragraph({ spacing: { after: 60 }, children: [t(item.step, { bold: true, color: C.orange, size: 20 })] }),
-        new Paragraph({ spacing: { after: 60 }, children: [t(item.title, { bold: true, size: 22 })] }),
-        new Paragraph({ spacing: { after: 40 }, children: [t(item.body, { color: C.textMuted, size: 20 })] }),
+        new Paragraph({ spacing: { after: 40 }, children: [t(item.step, { bold: true, color: C.orange, size: 18 })] }),
+        new Paragraph({ spacing: { after: 40 }, children: [t(item.title, { bold: true, size: 19 })] }),
+        new Paragraph({ spacing: { after: 40 }, children: [t(item.body, { color: C.textMuted, size: 17 })] }),
       ],
     })
   );
@@ -192,25 +192,39 @@ function steps4(items) {
 }
 
 function kpis(items) {
-  const colW = Math.floor(CW / items.length);
   const brd = { style: BorderStyle.SINGLE, size: 2, color: C.border };
-  const cells = items.map((item) =>
-    new TableCell({
-      width: { size: colW, type: WidthType.DXA },
-      shading: { type: ShadingType.CLEAR, fill: C.blueLight },
-      borders: { top: brd, bottom: brd, left: brd, right: brd },
-      margins: { top: 200, bottom: 200, left: 120, right: 120 },
-      verticalAlign: VerticalAlign.CENTER,
-      children: [
-        new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 40 }, children: [t(item.val, { bold: true, color: C.orange, size: 52 })] }),
-        new Paragraph({ alignment: AlignmentType.CENTER, children: [t(item.label, { color: C.textMuted, size: 18 })] }),
-      ],
-    })
-  );
+  const cols = Math.min(items.length, 2);
+  const colW = Math.floor(CW / cols);
+  const rows = [];
+  for (let i = 0; i < items.length; i += cols) {
+    const rowItems = items.slice(i, i + cols);
+    const cells = rowItems.map((item) =>
+      new TableCell({
+        width: { size: colW, type: WidthType.DXA },
+        shading: { type: ShadingType.CLEAR, fill: C.blueLight },
+        borders: { top: brd, bottom: brd, left: brd, right: brd },
+        margins: { top: 160, bottom: 160, left: 120, right: 120 },
+        verticalAlign: VerticalAlign.CENTER,
+        children: [
+          new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 40 }, children: [t(item.val, { bold: true, color: C.orange, size: 36 })] }),
+          new Paragraph({ alignment: AlignmentType.CENTER, children: [t(item.label, { color: C.textMuted, size: 16 })] }),
+        ],
+      })
+    );
+    // Pad with empty cell if odd number on last row
+    while (cells.length < cols) {
+      cells.push(new TableCell({
+        width: { size: colW, type: WidthType.DXA },
+        borders: { top: brd, bottom: brd, left: brd, right: brd },
+        children: [new Paragraph('')],
+      }));
+    }
+    rows.push(new TableRow({ children: cells }));
+  }
   return new Table({
     width: { size: CW, type: WidthType.DXA },
     layout: TableLayoutType.FIXED,
-    rows: [new TableRow({ children: cells })],
+    rows,
   });
 }
 
@@ -469,11 +483,11 @@ function metrics3(items) {
       width: { size: colW, type: WidthType.DXA },
       shading: { type: ShadingType.CLEAR, fill: i === 1 ? C.pageBg : C.blueLight },
       borders: NO_BORDERS,
-      margins: { top: 240, bottom: 240, left: 120, right: 120 },
+      margins: { top: 200, bottom: 200, left: 100, right: 100 },
       verticalAlign: VerticalAlign.CENTER,
       children: [
-        new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 40 }, children: [t(item.val, { bold: true, color: C.orange, size: 64 })] }),
-        new Paragraph({ alignment: AlignmentType.CENTER, children: [t(item.label, { color: C.textMuted, size: 18 })] }),
+        new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 40 }, children: [t(item.val, { bold: true, color: C.orange, size: 48 })] }),
+        new Paragraph({ alignment: AlignmentType.CENTER, children: [t(item.label, { color: C.textMuted, size: 16 })] }),
       ],
     })
   );

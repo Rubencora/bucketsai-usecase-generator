@@ -3,6 +3,34 @@ import axios from 'axios';
 
 const openai = new OpenAI();
 
+async function crawlWithFirecrawl(url) {
+  const apiKey = process.env.FIRECRAWL_API_KEY;
+  if (!apiKey || !url) return null;
+  try {
+    console.log('   Crawleando sitio web con Firecrawl...');
+    const res = await axios.post(
+      'https://api.firecrawl.dev/v1/scrape',
+      {
+        url,
+        formats: ['markdown'],
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 30000,
+      }
+    );
+    const markdown = res.data?.data?.markdown || '';
+    // Truncate to avoid token limits
+    return markdown.slice(0, 8000) || null;
+  } catch (err) {
+    console.log(`   Advertencia: no se pudo crawlear ${url} (${err.message})`);
+    return null;
+  }
+}
+
 async function searchTavily(query) {
   const apiKey = process.env.TAVILY_API_KEY;
   if (!apiKey) return null;
@@ -44,9 +72,11 @@ async function search(query) {
   return searchDuckDuckGo(query);
 }
 
-export async function researchCompany(empresa, pais, infoExtra) {
+export async function researchCompany(empresa, pais, infoExtra, url) {
+  // Run crawl and search in parallel
+  const paisContext = pais ? ` ${pais}` : '';
   const queries = [
-    `${empresa} empresa operaciones empleados ${pais}`,
+    `${empresa} empresa operaciones empleados${paisContext}`,
     `${empresa} fuerza de ventas canales distribucion`,
     `${empresa} productos portafolio catalogo`,
     `${empresa} ingresos tamano colaboradores`,
@@ -54,12 +84,20 @@ export async function researchCompany(empresa, pais, infoExtra) {
   ];
 
   console.log('   Buscando informacion...');
-  const results = await Promise.all(queries.map((q) => search(q)));
-  const allResults = results.join('\n\n---\n\n');
+  const [crawlData, ...searchResults] = await Promise.all([
+    crawlWithFirecrawl(url),
+    ...queries.map((q) => search(q)),
+  ]);
 
-  if (!allResults.trim()) {
-    console.log('   Advertencia: no se encontraron resultados de busqueda. Se usara contexto del usuario.');
+  const allResults = searchResults.join('\n\n---\n\n');
+
+  if (!allResults.trim() && !crawlData) {
+    console.log('   Advertencia: no se encontraron resultados de busqueda ni datos del sitio web. Se usara contexto del usuario.');
   }
+
+  const crawlSection = crawlData
+    ? `\n\nContenido del sitio web de la empresa (${url}):\n${crawlData}`
+    : '';
 
   const prompt = `Analiza estos resultados de busqueda sobre la empresa "${empresa}" y devuelve SOLO un JSON con:
 {
@@ -78,7 +116,7 @@ export async function researchCompany(empresa, pais, infoExtra) {
 Si no encuentras un dato, usa null. SOLO el JSON, sin backticks ni texto adicional.
 
 Resultados de busqueda:
-${allResults}
+${allResults}${crawlSection}
 
 Informacion adicional del usuario: ${infoExtra || 'ninguna'}`;
 

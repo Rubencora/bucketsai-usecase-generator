@@ -33,7 +33,8 @@ export async function buildContent(empresa, pais, idioma, enfoque, researchData,
 
   // --- Llamada 1: Secciones base ---
   console.log('   Generando secciones base...');
-  const base = await callLLM(systemPrompt, `Genera el contenido base del caso de uso de BucketsAI para la empresa ${empresa} (${pais}).
+  const paisLabel = pais ? ` (${pais})` : '';
+  const base = await callLLM(systemPrompt, `Genera el contenido base del caso de uso de BucketsAI para la empresa ${empresa}${paisLabel}.
 
 CONOCIMIENTO DE BUCKETSAI:
 ${knowledge}

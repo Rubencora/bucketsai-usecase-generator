@@ -7,7 +7,7 @@ import { generateDocx } from './src/doc_generator.js';
 const inputs = await collectInputs();
 
 console.log(`\n[1/3] Investigando ${inputs.empresa}...`);
-const researchData = await researchCompany(inputs.empresa, inputs.pais, inputs.infoExtra);
+const researchData = await researchCompany(inputs.empresa, inputs.pais, inputs.infoExtra, inputs.url);
 
 console.log(`[2/3] Construyendo contenido...`);
 const content = await buildContent(inputs.empresa, inputs.pais, inputs.idioma, inputs.enfoque, researchData, inputs.infoExtra);

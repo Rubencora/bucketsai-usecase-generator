@@ -7,7 +7,7 @@ import { generatePdf } from '../../../src/pdf_generator.js';
 export const maxDuration = 120;
 
 export async function POST(request) {
-  const { empresa, pais, idioma, enfoque, infoExtra } = await request.json();
+  const { empresa, url, pais, idioma, enfoque, infoExtra } = await request.json();
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -19,7 +19,7 @@ export async function POST(request) {
       try {
         // Step 1: Research
         send({ type: 'step', message: `Investigando ${empresa}...` });
-        const researchData = await researchCompany(empresa, pais, infoExtra);
+        const researchData = await researchCompany(empresa, pais, infoExtra, url);
         send({ type: 'step', message: `Datos de ${empresa} obtenidos` });
 
         // Step 2: Content
