@@ -10,10 +10,13 @@ export async function GET(request, { params }) {
   }
 
   const buffer = readFileSync(filePath);
+  const isPdf = filename.endsWith('.pdf');
 
   return new Response(buffer, {
     headers: {
-      'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'Content-Type': isPdf
+        ? 'application/pdf'
+        : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'Content-Disposition': `attachment; filename="${filename}"`,
     },
   });

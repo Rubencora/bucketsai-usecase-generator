@@ -170,7 +170,7 @@ export default function Home() {
           if (data.type === 'step') {
             setSteps((prev) => [...prev, data.message]);
           } else if (data.type === 'done') {
-            setResult(data);
+            setResult({ ...data, filename: data.docxFilename });
             setStatus('done');
           } else if (data.type === 'error') {
             setError(data.message);
@@ -440,14 +440,23 @@ export default function Home() {
                   ))}
                 </div>
 
-                {/* Download button */}
-                <a
-                  href={`/api/download/${encodeURIComponent(result.filename)}`}
-                  className="flex items-center justify-center gap-2.5 w-full py-4 rounded-xl bg-brand-blue text-white font-bold text-lg cursor-pointer hover:bg-brand-blue-med focus:outline-none focus:ring-4 focus:ring-brand-blue/30"
-                >
-                  <IconDownload className="w-5 h-5" />
-                  Descargar documento
-                </a>
+                {/* Download buttons */}
+                <div className="grid grid-cols-2 gap-3">
+                  <a
+                    href={`/api/download/${encodeURIComponent(result.pdfFilename || result.filename)}`}
+                    className="flex items-center justify-center gap-2.5 py-4 rounded-xl bg-brand-blue text-white font-bold cursor-pointer hover:bg-brand-blue-med focus:outline-none focus:ring-4 focus:ring-brand-blue/30"
+                  >
+                    <IconDownload className="w-5 h-5" />
+                    PDF
+                  </a>
+                  <a
+                    href={`/api/download/${encodeURIComponent(result.docxFilename || result.filename)}`}
+                    className="flex items-center justify-center gap-2.5 py-4 rounded-xl bg-white text-brand-blue font-bold border-2 border-brand-blue cursor-pointer hover:bg-brand-blue-light focus:outline-none focus:ring-4 focus:ring-brand-blue/30"
+                  >
+                    <IconDownload className="w-5 h-5" />
+                    Word (.docx)
+                  </a>
+                </div>
               </div>
             </div>
 
