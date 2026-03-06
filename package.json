@@ -1,0 +1,27 @@
+{
+  "name": "bucketsai-usecase-generator",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "main.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start:web": "next start",
+    "cli": "node main.js",
+    "generate": "node main.js"
+  },
+  "dependencies": {
+    "openai": "^4.70.0",
+    "axios": "^1.7.0",
+    "docx": "^9.0.0",
+    "dotenv": "^16.0.0",
+    "inquirer": "^10.0.0",
+    "next": "^15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.0",
+    "tailwindcss": "^4.0.0"
+  }
+}
