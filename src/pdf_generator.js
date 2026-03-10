@@ -20,26 +20,30 @@ function buildHTML(c) {
     body {
       font-family: 'Inter', -apple-system, system-ui, sans-serif;
       color: ${h(C.navyText)};
-      font-size: 10pt;
-      line-height: 1.6;
+      font-size: 8.5pt;
+      line-height: 1.45;
       -webkit-font-smoothing: antialiased;
     }
 
     .page { width: 100%; }
-    p { margin-bottom: 8px; }
+    p { margin-bottom: 5px; }
+
+    .page-break { page-break-before: always; }
+    .no-break { page-break-inside: avoid; }
 
     /* ===== COVER ===== */
     .cover {
       background: linear-gradient(145deg, ${h(C.blue)} 0%, #3358B8 55%, #1E3A8A 100%);
-      padding: 80px 72px 60px;
+      padding: 56px 56px 40px;
+      margin-top: -48px;
       position: relative;
       overflow: hidden;
     }
     .cover::before {
       content: '';
       position: absolute;
-      top: -100px; right: -80px;
-      width: 380px; height: 380px;
+      top: -80px; right: -60px;
+      width: 320px; height: 320px;
       background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%);
       border-radius: 50%;
     }
@@ -47,107 +51,108 @@ function buildHTML(c) {
       display: inline-block;
       background: rgba(255,255,255,0.12);
       color: rgba(255,255,255,0.8);
-      font-size: 7.5pt;
+      font-size: 6.5pt;
       font-weight: 600;
       letter-spacing: 1.5px;
       text-transform: uppercase;
-      padding: 5px 16px;
+      padding: 4px 14px;
       border-radius: 20px;
-      margin-bottom: 28px;
+      margin-bottom: 20px;
       border: 1px solid rgba(255,255,255,0.12);
     }
     .cover h1 {
       color: white;
-      font-size: 40pt;
+      font-size: 34pt;
       font-weight: 800;
       letter-spacing: -1.5px;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
     .cover .empresa {
       color: rgba(255,255,255,0.65);
-      font-size: 26pt;
+      font-size: 22pt;
       font-weight: 300;
       letter-spacing: -0.5px;
-      margin-bottom: 20px;
+      margin-bottom: 14px;
     }
     .cover .subtitle {
       color: rgba(255,255,255,0.6);
-      font-size: 10.5pt;
+      font-size: 9pt;
       font-weight: 400;
-      line-height: 1.6;
-      max-width: 480px;
+      line-height: 1.5;
+      max-width: 420px;
     }
     .cover .tagline {
       color: rgba(255,255,255,0.38);
-      font-size: 8.5pt;
+      font-size: 7.5pt;
       font-style: italic;
-      margin-top: 36px;
+      margin-top: 24px;
       letter-spacing: 0.3px;
     }
 
     .meta-bar {
       display: flex;
       justify-content: space-between;
-      padding: 10px 72px;
+      padding: 7px 56px;
       background: ${h(C.navyText)};
       color: rgba(255,255,255,0.45);
-      font-size: 7pt;
+      font-size: 6.5pt;
       font-weight: 500;
       letter-spacing: 1.2px;
       text-transform: uppercase;
     }
 
-    .content { padding: 0 72px; }
+    .content { padding: 0 44px; }
 
     /* ===== SECTION HEADERS ===== */
     .sec-header {
       display: flex;
       align-items: center;
-      margin: 36px 0 18px;
+      margin: 16px 0 8px;
       page-break-after: avoid;
     }
+    .sec-header.first { margin-top: 6px; }
     .sec-num {
       color: ${h(C.orange)};
-      font-size: 10pt;
+      font-size: 9pt;
       font-weight: 800;
-      margin-right: 12px;
+      margin-right: 10px;
     }
     .sec-title {
-      font-size: 15pt;
+      font-size: 12pt;
       font-weight: 700;
       color: ${h(C.navyText)};
-      letter-spacing: -0.4px;
+      letter-spacing: -0.3px;
     }
     .sec-line {
       flex: 1;
       height: 1px;
       background: ${h(C.border)};
-      margin-left: 18px;
+      margin-left: 14px;
     }
 
     /* ===== BOXES ===== */
     .box-primary {
       background: linear-gradient(135deg, ${h(C.blueLight)} 0%, #F0F4FC 100%);
       border-left: 3px solid ${h(C.blue)};
-      border-radius: 0 10px 10px 0;
-      padding: 18px 24px;
-      margin: 14px 0;
+      border-radius: 0 8px 8px 0;
+      padding: 8px 14px;
+      margin: 6px 0;
       page-break-inside: avoid;
     }
     .box-outline {
       border: 1.5px solid ${h(C.blue)};
-      border-radius: 10px;
-      padding: 18px 24px;
-      margin: 14px 0;
+      border-radius: 8px;
+      padding: 8px 14px;
+      margin: 6px 0;
       background: white;
       page-break-inside: avoid;
     }
     .box-accent {
       background: ${h(C.pageBg)};
       border-left: 3px solid ${h(C.blueMed)};
-      border-radius: 0 10px 10px 0;
-      padding: 18px 24px;
-      margin: 14px 0;
+      border-radius: 0 8px 8px 0;
+      padding: 8px 14px;
+      margin: 6px 0;
       page-break-inside: avoid;
     }
 
@@ -155,68 +160,73 @@ function buildHTML(c) {
     .steps {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      margin: 16px 0;
+      gap: 6px;
+      margin: 8px 0;
       page-break-inside: avoid;
     }
     .step {
       background: white;
       border: 1.5px solid ${h(C.border)};
-      border-radius: 10px;
-      padding: 18px 14px;
+      border-radius: 8px;
+      padding: 10px 8px;
     }
     .step-num {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 26px; height: 26px;
+      width: 20px; height: 20px;
       background: ${h(C.blue)};
       color: white;
-      font-size: 9pt;
+      font-size: 7.5pt;
       font-weight: 700;
-      border-radius: 7px;
-      margin-bottom: 10px;
+      border-radius: 5px;
+      margin-bottom: 6px;
     }
     .step-title {
       font-weight: 700;
-      font-size: 9pt;
+      font-size: 7.5pt;
       color: ${h(C.navyText)};
-      margin-bottom: 5px;
-      line-height: 1.3;
+      margin-bottom: 3px;
+      line-height: 1.25;
     }
     .step-body {
       color: ${h(C.textMuted)};
-      font-size: 8pt;
-      line-height: 1.5;
+      font-size: 7pt;
+      line-height: 1.4;
     }
 
     /* ===== KPI BAR ===== */
     .kpi-bar {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      margin: 20px 0;
+      gap: 6px;
+      margin: 10px 0;
       page-break-inside: avoid;
     }
     .kpi {
       background: white;
       border: 1.5px solid ${h(C.border)};
-      border-radius: 10px;
+      border-radius: 8px;
       text-align: center;
-      padding: 18px 10px;
+      padding: 8px 6px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
     .kpi-val {
       color: ${h(C.orange)};
-      font-size: 20pt;
+      font-size: 11pt;
       font-weight: 800;
-      letter-spacing: -0.5px;
+      letter-spacing: -0.3px;
+      line-height: 1.2;
+      margin-bottom: 2px;
     }
     .kpi-label {
       color: ${h(C.textMuted)};
-      font-size: 7pt;
+      font-size: 6pt;
       font-weight: 500;
-      margin-top: 3px;
-      line-height: 1.3;
+      margin-top: 1px;
+      line-height: 1.25;
       text-transform: uppercase;
       letter-spacing: 0.2px;
     }
@@ -225,27 +235,27 @@ function buildHTML(c) {
     .problem-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin: 14px 0;
+      gap: 6px;
+      margin: 8px 0;
       page-break-inside: avoid;
     }
     .problem-card {
       background: white;
       border: 1.5px solid ${h(C.border)};
-      border-radius: 10px;
-      padding: 20px;
+      border-radius: 8px;
+      padding: 10px 12px;
     }
     .problem-card-title {
       color: ${h(C.blue)};
       font-weight: 700;
-      font-size: 9.5pt;
-      margin-bottom: 12px;
+      font-size: 7.5pt;
+      margin-bottom: 6px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
     .problem-card-title .dot {
-      width: 5px; height: 5px;
+      width: 4px; height: 4px;
       background: ${h(C.blue)};
       border-radius: 50%;
       flex-shrink: 0;
@@ -257,9 +267,9 @@ function buildHTML(c) {
     .dim-header {
       background: white;
       border: 1.5px solid ${h(C.blue)};
-      border-radius: 12px;
-      padding: 22px 24px;
-      margin: 28px 0 16px;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin: 12px 0 6px;
       page-break-inside: avoid;
       page-break-after: avoid;
       position: relative;
@@ -269,101 +279,101 @@ function buildHTML(c) {
       content: '';
       position: absolute;
       top: 0; left: 0;
-      width: 100%; height: 3px;
+      width: 100%; height: 2px;
       background: ${h(C.blue)};
     }
     .dim-header.b { border-color: ${h(C.blueMed)}; }
     .dim-header.b::before { background: ${h(C.blueMed)}; }
     .dim-chip {
       display: inline-block;
-      font-size: 7pt;
+      font-size: 6pt;
       font-weight: 700;
       letter-spacing: 1px;
       text-transform: uppercase;
-      padding: 3px 10px;
-      border-radius: 5px;
-      margin-bottom: 6px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-bottom: 3px;
     }
     .dim-chip.a { background: ${h(C.blueLight)}; color: ${h(C.blue)}; }
     .dim-chip.b { background: #E8EDFA; color: ${h(C.blueMed)}; }
     .dim-title {
       font-weight: 800;
-      font-size: 14pt;
+      font-size: 11pt;
       letter-spacing: -0.3px;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
     .dim-desc {
       color: ${h(C.textMuted)};
-      font-size: 9pt;
-      line-height: 1.5;
+      font-size: 7.5pt;
+      line-height: 1.4;
     }
 
     /* ===== CASE BLOCKS ===== */
     .case-block {
       page-break-inside: avoid;
-      margin-bottom: 16px;
+      margin-bottom: 6px;
     }
     .sub-sec {
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin: 20px 0 5px;
+      gap: 8px;
+      margin: 8px 0 2px;
       page-break-after: avoid;
     }
     .sub-tag {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 3px 10px;
+      padding: 2px 8px;
       color: white;
       font-weight: 700;
-      font-size: 7.5pt;
-      border-radius: 5px;
+      font-size: 6.5pt;
+      border-radius: 4px;
       letter-spacing: 0.3px;
     }
     .sub-tag.a { background: ${h(C.blue)}; }
     .sub-tag.b { background: ${h(C.blueMed)}; }
-    .sub-title { font-weight: 700; font-size: 10.5pt; }
+    .sub-title { font-weight: 700; font-size: 8.5pt; }
     .setup {
       color: ${h(C.textMuted)};
-      font-size: 8.5pt;
-      margin-bottom: 8px;
+      font-size: 7pt;
+      margin-bottom: 4px;
       padding-left: 2px;
     }
 
     /* ===== CONVERSATION ===== */
     .convo-wrapper {
       background: ${h(C.pageBg)};
-      border-radius: 12px;
-      padding: 16px;
-      margin: 6px 0 10px;
+      border-radius: 8px;
+      padding: 8px;
+      margin: 2px 0 4px;
     }
     .q-block {
       background: white;
-      border-radius: 10px;
-      padding: 14px 18px;
-      margin-bottom: 10px;
+      border-radius: 6px;
+      padding: 6px 10px;
+      margin-bottom: 5px;
       border: 1px solid ${h(C.border)};
     }
     .q-role {
       color: ${h(C.textMuted)};
-      font-size: 7.5pt;
+      font-size: 6pt;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      margin-bottom: 3px;
+      margin-bottom: 1px;
       display: block;
     }
     .q-text {
-      font-size: 9.5pt;
+      font-size: 8pt;
       font-style: italic;
       color: ${h(C.navyText)};
-      line-height: 1.5;
+      line-height: 1.4;
     }
     .r-block {
       background: linear-gradient(135deg, ${h(C.blueLight)} 0%, #F0F4FC 100%);
-      border-radius: 10px;
-      padding: 14px 18px;
+      border-radius: 6px;
+      padding: 6px 10px;
       border: 1px solid rgba(68,112,220,0.12);
     }
     .r-block.b {
@@ -373,40 +383,40 @@ function buildHTML(c) {
     .r-header {
       display: flex;
       align-items: center;
-      gap: 7px;
-      margin-bottom: 8px;
+      gap: 5px;
+      margin-bottom: 4px;
     }
     .r-logo {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 20px; height: 20px;
+      width: 16px; height: 16px;
       background: ${h(C.blue)};
-      border-radius: 5px;
+      border-radius: 4px;
       color: white;
-      font-size: 7.5pt;
+      font-size: 6.5pt;
       font-weight: 800;
     }
     .r-block.b .r-logo { background: ${h(C.blueMed)}; }
     .r-label {
       color: ${h(C.blue)};
       font-weight: 700;
-      font-size: 9pt;
+      font-size: 7.5pt;
     }
     .r-block.b .r-label { color: ${h(C.blueMed)}; }
     .r-bullet {
-      font-size: 9pt;
-      margin: 4px 0;
-      padding-left: 16px;
+      font-size: 7.5pt;
+      margin: 2px 0;
+      padding-left: 12px;
       position: relative;
-      line-height: 1.5;
+      line-height: 1.4;
       color: ${h(C.navyText)};
     }
     .r-bullet::before {
       content: '';
       position: absolute;
-      left: 3px; top: 6px;
-      width: 4px; height: 4px;
+      left: 2px; top: 5px;
+      width: 3px; height: 3px;
       background: ${h(C.blue)};
       border-radius: 50%;
     }
@@ -416,55 +426,55 @@ function buildHTML(c) {
     .prop-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin: 16px 0;
+      gap: 6px;
+      margin: 8px 0;
     }
     .prop-card {
       background: white;
       border: 1.5px solid ${h(C.border)};
-      border-radius: 10px;
-      padding: 16px 18px;
+      border-radius: 8px;
+      padding: 8px 10px;
       page-break-inside: avoid;
     }
     .prop-card-title {
       font-weight: 700;
-      font-size: 9.5pt;
+      font-size: 8pt;
       color: ${h(C.blue)};
-      margin-bottom: 3px;
+      margin-bottom: 2px;
     }
     .prop-card-desc {
-      font-size: 8.5pt;
+      font-size: 7pt;
       color: ${h(C.textMuted)};
-      line-height: 1.5;
+      line-height: 1.4;
     }
 
     /* ===== METRICS ===== */
     .metrics {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin: 24px 0;
+      gap: 6px;
+      margin: 12px 0;
       page-break-inside: avoid;
     }
     .metric {
       text-align: center;
       background: white;
       border: 1.5px solid ${h(C.border)};
-      border-radius: 10px;
-      padding: 24px 14px;
+      border-radius: 8px;
+      padding: 12px 10px;
     }
     .metric-val {
       color: ${h(C.orange)};
-      font-size: 28pt;
+      font-size: 18pt;
       font-weight: 800;
-      letter-spacing: -1px;
+      letter-spacing: -0.5px;
     }
     .metric-label {
       color: ${h(C.textMuted)};
-      font-size: 7.5pt;
+      font-size: 6.5pt;
       font-weight: 500;
-      margin-top: 4px;
-      line-height: 1.4;
+      margin-top: 2px;
+      line-height: 1.3;
     }
 
     /* ===== CLOSING ===== */
@@ -475,6 +485,10 @@ function buildHTML(c) {
       justify-content: center;
       min-height: 100vh;
       background: linear-gradient(145deg, ${h(C.blue)} 0%, #3358B8 50%, #1E3A8A 100%);
+      margin-top: -48px;
+      margin-bottom: -36px;
+      padding-top: 48px;
+      padding-bottom: 36px;
       position: relative;
       overflow: hidden;
     }
@@ -482,12 +496,12 @@ function buildHTML(c) {
       content: '';
       position: absolute;
       top: 20%; right: -10%;
-      width: 500px; height: 500px;
+      width: 400px; height: 400px;
       background: radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 60%);
       border-radius: 50%;
     }
     .closing {
-      padding: 60px 72px;
+      padding: 40px 56px;
       text-align: center;
       width: 100%;
       position: relative;
@@ -496,42 +510,42 @@ function buildHTML(c) {
       display: inline-block;
       background: rgba(255,255,255,0.1);
       color: rgba(255,255,255,0.65);
-      font-size: 7pt;
+      font-size: 6.5pt;
       font-weight: 600;
       letter-spacing: 1.5px;
       text-transform: uppercase;
-      padding: 5px 18px;
+      padding: 4px 16px;
       border-radius: 20px;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
       border: 1px solid rgba(255,255,255,0.1);
     }
     .closing h2 {
       color: white;
-      font-size: 26pt;
+      font-size: 22pt;
       font-weight: 800;
       letter-spacing: -1px;
-      margin-bottom: 14px;
+      margin-bottom: 10px;
     }
     .closing .tag1 {
       color: rgba(255,255,255,0.5);
       font-style: italic;
-      font-size: 10.5pt;
+      font-size: 9pt;
       font-weight: 300;
     }
     .closing .tag2 {
       color: white;
       font-weight: 600;
-      font-size: 10.5pt;
-      margin-bottom: 36px;
+      font-size: 9pt;
+      margin-bottom: 28px;
     }
     .closing-divider {
-      width: 50px; height: 1px;
+      width: 40px; height: 1px;
       background: rgba(255,255,255,0.18);
-      margin: 0 auto 16px;
+      margin: 0 auto 12px;
     }
     .closing .contact {
       color: rgba(255,255,255,0.35);
-      font-size: 8.5pt;
+      font-size: 7.5pt;
       letter-spacing: 0.3px;
     }
   `;
@@ -592,7 +606,7 @@ function buildHTML(c) {
   <div class="content">
 
     <!-- 01 -->
-    <div class="sec-header">
+    <div class="sec-header first">
       <div class="sec-num">01</div>
       <div class="sec-title">Que es BucketsAI</div>
       <div class="sec-line"></div>
@@ -730,7 +744,7 @@ export async function generatePdf(content) {
   await page.pdf({
     path: outputPath,
     format: 'Letter',
-    margin: { top: '0', bottom: '0', left: '0', right: '0' },
+    margin: { top: '48px', bottom: '36px', left: '0', right: '0' },
     printBackground: true,
   });
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
 const ENFOQUE_OPTIONS = [
@@ -120,18 +121,30 @@ export default function Home() {
     idioma: 'Espanol',
     enfoque: 'Auto (el agente decide segun el perfil)',
     infoExtra: '',
+    docType: 'usecase',
+    deckEngine: 'auto',
   });
   const [status, setStatus] = useState('idle');
   const [steps, setSteps] = useState([]);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [gammaAvailable, setGammaAvailable] = useState(false);
   const empresaRef = useRef(null);
+  const router = useRouter();
 
   useEffect(() => {
     if (status === 'idle' && empresaRef.current) {
       empresaRef.current.focus();
     }
   }, [status]);
+
+  useEffect(() => {
+    fetch('/api/auth/me').then(r => r.json()).then(d => {
+      if (d.user?.role === 'admin') setIsAdmin(true);
+      if (d.user?.gammaEnabled) setGammaAvailable(true);
+    }).catch(() => {});
+  }, []);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -171,7 +184,7 @@ export default function Home() {
           if (data.type === 'step') {
             setSteps((prev) => [...prev, data.message]);
           } else if (data.type === 'done') {
-            setResult({ ...data, filename: data.docxFilename });
+            setResult({ ...data, filename: data.docxFilename || data.onepagerFilename });
             setStatus('done');
           } else if (data.type === 'error') {
             setError(data.message);
@@ -203,10 +216,34 @@ export default function Home() {
       {/* ---- NAVBAR ---- */}
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-brand-border">
         <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Image src="/logo.png" alt="BucketsAI" width={160} height={36} priority className="h-8 w-auto" />
-          <span className="text-xs text-brand-gray-mid bg-brand-blue-light px-3 py-1 rounded-full font-medium">
-            Use Case Generator
-          </span>
+          <button onClick={handleReset} className="cursor-pointer focus:outline-none">
+            <Image src="/logo.png" alt="BucketsAI" width={160} height={36} priority className="h-8 w-auto" />
+          </button>
+          <div className="flex items-center gap-3">
+            {isAdmin && (
+              <button
+                onClick={() => router.push('/admin')}
+                className="text-xs text-brand-orange font-semibold hover:text-brand-orange/80 cursor-pointer"
+              >
+                Admin
+              </button>
+            )}
+            <button
+              onClick={() => router.push('/history')}
+              className="text-xs text-brand-blue font-semibold hover:text-brand-blue-med cursor-pointer"
+            >
+              Historial
+            </button>
+            <span className="text-xs text-brand-gray-mid bg-brand-blue-light px-3 py-1 rounded-full font-medium">
+              Use Case Generator
+            </span>
+            <button
+              onClick={async () => { await fetch('/api/auth/logout', { method: 'POST' }); router.push('/login'); router.refresh(); }}
+              className="text-xs text-brand-gray-mid hover:text-red-500 cursor-pointer font-medium"
+            >
+              Salir
+            </button>
+          </div>
         </div>
       </nav>
 
@@ -339,6 +376,72 @@ export default function Home() {
                   </div>
                 </div>
 
+                {/* Document type selector */}
+                <div>
+                  <label className="block text-sm font-semibold text-brand-navy-text mb-3">
+                    Tipo de documento
+                  </label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { value: 'usecase', label: 'Use Case', desc: 'Documento completo con caso de uso detallado (PDF + Word)' },
+                      { value: 'onepager', label: 'One-Pager', desc: 'Resumen ejecutivo de una pagina para ventas' },
+                      { value: 'deck', label: 'Deck Comercial', desc: 'Presentacion PPTX personalizada para ventas' },
+                      { value: 'both', label: 'Todos', desc: 'Genera Use Case + One-Pager + Deck Comercial' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setForm({ ...form, docType: opt.value, deckEngine: 'auto' })}
+                        className={`text-left p-3.5 rounded-xl border-2 cursor-pointer transition-all duration-150 ${
+                          form.docType === opt.value
+                            ? 'border-brand-orange bg-orange-50 ring-2 ring-brand-orange/20'
+                            : 'border-brand-border bg-brand-page-bg hover:border-brand-orange/50 hover:bg-white'
+                        }`}
+                      >
+                        <span className={`block text-sm font-semibold ${form.docType === opt.value ? 'text-brand-orange' : 'text-brand-navy-text'}`}>
+                          {opt.label}
+                        </span>
+                        <span className="block text-xs text-brand-gray-mid mt-0.5 leading-snug">
+                          {opt.desc}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Deck engine selector — only when deck selected and Gamma available */}
+                {(form.docType === 'deck' || form.docType === 'both') && gammaAvailable && (
+                  <div>
+                    <label className="block text-sm font-semibold text-brand-navy-text mb-3">
+                      Motor de Deck
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { value: 'auto', label: 'Gamma AI', desc: 'Mayor calidad visual (predeterminado)', premium: false },
+                        { value: 'presenton', label: 'Presenton', desc: 'Generacion rapida estandar', premium: false },
+                      ].map((eng) => (
+                        <button
+                          key={eng.value}
+                          type="button"
+                          onClick={() => setForm({ ...form, deckEngine: eng.value })}
+                          className={`text-left p-3.5 rounded-xl border-2 cursor-pointer transition-all duration-150 ${
+                            form.deckEngine === eng.value
+                              ? 'border-brand-blue bg-brand-blue-light ring-2 ring-brand-blue/20'
+                              : 'border-brand-border bg-brand-page-bg hover:border-brand-blue/50 hover:bg-white'
+                          }`}
+                        >
+                          <span className={`block text-sm font-semibold ${form.deckEngine === eng.value ? 'text-brand-blue' : 'text-brand-navy-text'}`}>
+                            {eng.label}
+                          </span>
+                          <span className="block text-xs text-brand-gray-mid mt-0.5 leading-snug">
+                            {eng.desc}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Info extra — collapsible feel */}
                 <div>
                   <label htmlFor="infoExtra" className="block text-sm font-semibold text-brand-navy-text mb-2">
@@ -362,7 +465,7 @@ export default function Home() {
                   className="w-full py-4 rounded-xl bg-brand-blue text-white font-bold text-lg cursor-pointer hover:bg-brand-blue-med disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 focus:outline-none focus:ring-4 focus:ring-brand-blue/30"
                 >
                   <IconSparkles className="w-5 h-5" />
-                  Generar caso de uso
+                  {form.docType === 'onepager' ? 'Generar One-Pager' : form.docType === 'deck' ? 'Generar Deck Comercial' : form.docType === 'both' ? 'Generar Todos los Documentos' : 'Generar caso de uso'}
                 </button>
                 <p className="text-center text-xs text-brand-gray-mid">
                   Cmd + Enter para generar
@@ -449,8 +552,9 @@ export default function Home() {
                   {[
                     { label: 'Sector', value: result.sector || 'Detectado por IA' },
                     { label: 'Idioma', value: form.idioma },
-                    { label: 'Dimension A', value: result.dim_a },
-                    { label: 'Dimension B', value: result.dim_b },
+                    ...(result.dim_a ? [{ label: 'Dimension A', value: result.dim_a }] : []),
+                    ...(result.dim_b ? [{ label: 'Dimension B', value: result.dim_b }] : []),
+                    ...(!result.dim_a && !result.dim_b ? [{ label: 'Tipo', value: 'One-Pager' }] : []),
                   ].map((item) => (
                     <div key={item.label} className="bg-brand-page-bg rounded-xl p-3">
                       <p className="text-xs text-brand-gray-mid mb-0.5">{item.label}</p>
@@ -460,21 +564,52 @@ export default function Home() {
                 </div>
 
                 {/* Download buttons */}
-                <div className="grid grid-cols-2 gap-3">
-                  <a
-                    href={`/api/download/${encodeURIComponent(result.pdfFilename || result.filename)}`}
-                    className="flex items-center justify-center gap-2.5 py-4 rounded-xl bg-brand-blue text-white font-bold cursor-pointer hover:bg-brand-blue-med focus:outline-none focus:ring-4 focus:ring-brand-blue/30"
-                  >
-                    <IconDownload className="w-5 h-5" />
-                    PDF
-                  </a>
-                  <a
-                    href={`/api/download/${encodeURIComponent(result.docxFilename || result.filename)}`}
-                    className="flex items-center justify-center gap-2.5 py-4 rounded-xl bg-white text-brand-blue font-bold border-2 border-brand-blue cursor-pointer hover:bg-brand-blue-light focus:outline-none focus:ring-4 focus:ring-brand-blue/30"
-                  >
-                    <IconDownload className="w-5 h-5" />
-                    Word (.docx)
-                  </a>
+                <div className="grid gap-3 grid-cols-2">
+                  {result.pdfFilename && (
+                    <a
+                      href={`/api/download/${encodeURIComponent(result.pdfFilename)}`}
+                      className="flex items-center justify-center gap-2 py-4 rounded-xl bg-brand-blue text-white font-bold cursor-pointer hover:bg-brand-blue-med focus:outline-none focus:ring-4 focus:ring-brand-blue/30 text-sm"
+                    >
+                      <IconDownload className="w-5 h-5" />
+                      Use Case PDF
+                    </a>
+                  )}
+                  {result.docxFilename && (
+                    <a
+                      href={`/api/download/${encodeURIComponent(result.docxFilename)}`}
+                      className="flex items-center justify-center gap-2 py-4 rounded-xl bg-white text-brand-blue font-bold border-2 border-brand-blue cursor-pointer hover:bg-brand-blue-light focus:outline-none focus:ring-4 focus:ring-brand-blue/30 text-sm"
+                    >
+                      <IconDownload className="w-5 h-5" />
+                      Use Case Word
+                    </a>
+                  )}
+                  {result.onepagerFilename && (
+                    <a
+                      href={`/api/download/${encodeURIComponent(result.onepagerFilename)}`}
+                      className="flex items-center justify-center gap-2 py-4 rounded-xl bg-brand-orange text-white font-bold cursor-pointer hover:bg-brand-orange/85 focus:outline-none focus:ring-4 focus:ring-brand-orange/30 text-sm"
+                    >
+                      <IconDownload className="w-5 h-5" />
+                      One-Pager PDF
+                    </a>
+                  )}
+                  {result.onepagerDocxFilename && (
+                    <a
+                      href={`/api/download/${encodeURIComponent(result.onepagerDocxFilename)}`}
+                      className="flex items-center justify-center gap-2 py-4 rounded-xl bg-white text-brand-orange font-bold border-2 border-brand-orange cursor-pointer hover:bg-orange-50 focus:outline-none focus:ring-4 focus:ring-brand-orange/30 text-sm"
+                    >
+                      <IconDownload className="w-5 h-5" />
+                      One-Pager Word
+                    </a>
+                  )}
+                  {result.deckFilename && (
+                    <a
+                      href={`/api/download/${encodeURIComponent(result.deckFilename)}`}
+                      className="flex items-center justify-center gap-2 py-4 rounded-xl bg-brand-navy-text text-white font-bold cursor-pointer hover:bg-brand-navy-text/85 focus:outline-none focus:ring-4 focus:ring-brand-navy-text/30 text-sm col-span-2"
+                    >
+                      <IconDownload className="w-5 h-5" />
+                      Deck Comercial PPTX
+                    </a>
+                  )}
                 </div>
               </div>
             </div>

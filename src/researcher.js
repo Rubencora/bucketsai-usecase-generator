@@ -77,10 +77,10 @@ export async function researchCompany(empresa, pais, infoExtra, url) {
   const paisContext = pais ? ` ${pais}` : '';
   const queries = [
     `${empresa} empresa operaciones empleados${paisContext}`,
-    `${empresa} fuerza de ventas canales distribucion`,
-    `${empresa} productos portafolio catalogo`,
-    `${empresa} ingresos tamano colaboradores`,
-    `${empresa} retos desafios estrategia operativa`,
+    `${empresa} fuerza de ventas canales distribucion${paisContext}`,
+    `${empresa} productos portafolio catalogo${paisContext}`,
+    `${empresa} ingresos tamano colaboradores${paisContext}`,
+    `${empresa} retos desafios estrategia operativa${paisContext}`,
   ];
 
   console.log('   Buscando informacion...');
@@ -99,21 +99,25 @@ export async function researchCompany(empresa, pais, infoExtra, url) {
     ? `\n\nContenido del sitio web de la empresa (${url}):\n${crawlData}`
     : '';
 
-  const prompt = `Analiza estos resultados de busqueda sobre la empresa "${empresa}" y devuelve SOLO un JSON con:
+  const paisInstruction = pais
+    ? `\n\nIMPORTANTE: Enfocate EXCLUSIVAMENTE en la operacion de "${empresa}" en ${pais}. Solo incluye datos, cifras, tiendas, empleados y operaciones que correspondan a ${pais}. Ignora datos de otros paises o de la operacion global si no aplican a ${pais}.`
+    : '';
+
+  const prompt = `Analiza estos resultados de busqueda sobre la empresa "${empresa}"${pais ? ` en ${pais}` : ''} y devuelve SOLO un JSON con:
 {
-  "descripcion": "que hace la empresa (2 oraciones)",
+  "descripcion": "que hace la empresa en ${pais || 'su mercado'} (2 oraciones)",
   "sector": "industria principal",
-  "tamano": "numero aproximado de empleados o colaboradores",
-  "presencia": "cobertura geografica",
-  "canales": "como venden o distribuyen",
+  "tamano": "numero aproximado de empleados o colaboradores${pais ? ` en ${pais}` : ''}",
+  "presencia": "cobertura geografica${pais ? ` dentro de ${pais}` : ''}",
+  "canales": "como venden o distribuyen${pais ? ` en ${pais}` : ''}",
   "productos": ["producto1", "producto2", "producto3"],
-  "fuerza_comercial": "estructura del equipo de ventas/operaciones",
-  "puntos_venta": "numero de tiendas o puntos de atencion",
+  "fuerza_comercial": "estructura del equipo de ventas/operaciones${pais ? ` en ${pais}` : ''}",
+  "puntos_venta": "numero de tiendas o puntos de atencion${pais ? ` en ${pais}` : ''}",
   "kpis_publicos": ["kpi1", "kpi2", "kpi3", "kpi4"],
-  "retos": "desafios operativos conocidos",
+  "retos": "desafios operativos conocidos${pais ? ` en ${pais}` : ''}",
   "sector_tipo": "retail|banca|seguros|telco|logistica|bpo|otro"
 }
-Si no encuentras un dato, usa null. SOLO el JSON, sin backticks ni texto adicional.
+Si no encuentras un dato, usa null. SOLO el JSON, sin backticks ni texto adicional.${paisInstruction}
 
 Resultados de busqueda:
 ${allResults}${crawlSection}
