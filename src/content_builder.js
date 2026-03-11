@@ -29,20 +29,28 @@ async function callLLM(systemPrompt, userPrompt) {
   }
 }
 
-export async function buildContent(empresa, pais, idioma, enfoque, researchData, infoExtra) {
-  const systemPrompt = `Eres un experto en sales enablement B2B para BucketsAI. Generas casos de uso de venta precisos, concretos y especificos para cada empresa. Nunca uses emojis, guiones largos ni tildes. Todo en lenguaje directo.`;
+export async function buildContent(empresa, pais, idioma, enfoque, researchData, infoExtra, targetMode = 'company') {
+  const isIndustry = targetMode === 'industry';
+  const systemPrompt = isIndustry
+    ? `Eres un experto en sales enablement B2B para BucketsAI. Generas casos de uso de venta genericos para una INDUSTRIA o SECTOR, no para una empresa especifica. El contenido debe aplicar a cualquier empresa del sector. Usa ejemplos tipicos del sector con nombres ficticios si necesitas ilustrar. Nunca uses emojis, guiones largos ni tildes. Todo en lenguaje directo.`
+    : `Eres un experto en sales enablement B2B para BucketsAI. Generas casos de uso de venta precisos, concretos y especificos para cada empresa. Nunca uses emojis, guiones largos ni tildes. Todo en lenguaje directo.`;
 
   // --- Llamada 1: Secciones base ---
   console.log('   Generando secciones base...');
   const paisLabel = pais ? ` (${pais})` : '';
   const paisConstraint = pais
-    ? `\n\nRESTRICCION DE PAIS: TODO el contenido debe ser especifico para ${pais}. Usa nombres de ciudades, zonas, tiendas y datos que correspondan UNICAMENTE a ${pais}. NO menciones ciudades, datos ni operaciones de otros paises. Si la empresa opera globalmente, enfocate solo en su operacion en ${pais}.`
+    ? `\n\nRESTRICCION DE PAIS: TODO el contenido debe ser especifico para ${pais}. Usa nombres de ciudades, zonas, tiendas y datos que correspondan UNICAMENTE a ${pais}. NO menciones ciudades, datos ni operaciones de otros paises.${isIndustry ? '' : ' Si la empresa opera globalmente, enfocate solo en su operacion en ' + pais + '.'}`
     : '';
   const enfoqueConstraint = enfoque
     ? `\nENFOQUE DEL CASO: El caso de uso debe centrarse en "${enfoque}". Las dimensiones, casos conversacionales y ejemplos deben estar alineados con este enfoque especifico.`
     : '';
+  const industryConstraint = isIndustry
+    ? `\n\nMODO INDUSTRIA: Este caso de uso es GENERICO para toda la industria "${empresa}". NO nombres ninguna empresa real especifica como protagonista. Usa frases como "una empresa tipica del sector ${empresa}", "los equipos de [rol] en ${empresa}", "una aseguradora/banco/retailer tipico". Puedes mencionar empresas reales como REFERENCIAS del sector (ej: "como lo hacen empresas como X o Y"), pero el caso debe aplicar a CUALQUIER empresa del sector.`
+    : '';
 
-  const base = await callLLM(systemPrompt, `Genera el contenido base del caso de uso de BucketsAI para la empresa ${empresa}${paisLabel}.
+  const targetLabel = isIndustry ? `la industria ${empresa}` : `la empresa ${empresa}`;
+
+  const base = await callLLM(systemPrompt, `Genera el contenido base del caso de uso de BucketsAI para ${targetLabel}${paisLabel}.
 
 CONOCIMIENTO DE BUCKETSAI:
 ${knowledge}
@@ -52,51 +60,51 @@ ${JSON.stringify(researchData, null, 2)}
 
 INFO EXTRA DEL USUARIO: ${infoExtra || 'ninguna'}
 IDIOMA: ${idioma}
-ENFOQUE PREFERIDO: ${enfoque}${paisConstraint}${enfoqueConstraint}
+ENFOQUE PREFERIDO: ${enfoque}${paisConstraint}${enfoqueConstraint}${industryConstraint}
 
 Devuelve SOLO este JSON sin backticks:
 {
-  "titulo_caso": "subtitulo del documento (describe en 10-12 palabras el caso central)",
-  "terminos_simples": "BucketsAI es el ChatGPT interno de ${empresa}, conectado a [sus sistemas y documentos clave].",
-  "paso1_cuerpo": "2 oraciones sobre que documentos carga ${empresa} en BucketsAI",
-  "paso2_titulo": "Se integra con [sistemas especificos de esta empresa]",
+  "titulo_caso": "subtitulo del documento (describe en 10-12 palabras el caso central${isIndustry ? ' para el sector' : ''})",
+  "terminos_simples": "BucketsAI es el ChatGPT interno de ${isIndustry ? 'empresas del sector ' + empresa : empresa}, conectado a [${isIndustry ? 'los' : 'sus'} sistemas y documentos clave].",
+  "paso1_cuerpo": "2 oraciones sobre que documentos ${isIndustry ? 'cargan las empresas del sector' : 'carga ' + empresa} en BucketsAI",
+  "paso2_titulo": "Se integra con [sistemas ${isIndustry ? 'tipicos del sector' : 'especificos de esta empresa'}]",
   "paso2_cuerpo": "2 oraciones sobre que sistemas/datos se conectan en este contexto",
-  "paso3_cuerpo": "2 oraciones sobre gobernanza especifica para esta empresa",
-  "paso4_cuerpo": "2 oraciones sobre como usan el sistema los empleados de ${empresa}",
-  "problema_headline": "frase impactante de 15-20 palabras sobre el reto central de ${empresa} con datos reales",
+  "paso3_cuerpo": "2 oraciones sobre gobernanza ${isIndustry ? 'tipica del sector' : 'especifica para esta empresa'}",
+  "paso4_cuerpo": "2 oraciones sobre como usan el sistema los empleados ${isIndustry ? 'del sector' : 'de ' + empresa}",
+  "problema_headline": "frase impactante de 15-20 palabras sobre el reto central ${isIndustry ? 'del sector ' + empresa : 'de ' + empresa} con datos reales",
   "segunda_dimension_titulo": "titulo de la segunda dimension del problema (1 oracion)",
-  "segunda_dimension_cuerpo": "2-3 oraciones sobre el segundo problema especifico que BucketsAI resuelve",
-  "intro_caso": "2 oraciones sobre como BucketsAI opera en 2 dimensiones dentro de ${empresa}",
+  "segunda_dimension_cuerpo": "2-3 oraciones sobre el segundo problema ${isIndustry ? 'tipico del sector' : 'especifico'} que BucketsAI resuelve",
+  "intro_caso": "2 oraciones sobre como BucketsAI opera en 2 dimensiones ${isIndustry ? 'en el sector ' + empresa : 'dentro de ' + empresa}",
   "kpis": [
-    {"val": "[dato real de la empresa]", "label": "[etiqueta]"},
-    {"val": "[dato real de la empresa]", "label": "[etiqueta]"},
-    {"val": "[dato real de la empresa]", "label": "[etiqueta]"},
+    {"val": "[dato real ${isIndustry ? 'del sector' : 'de la empresa'}]", "label": "[etiqueta]"},
+    {"val": "[dato real ${isIndustry ? 'del sector' : 'de la empresa'}]", "label": "[etiqueta]"},
+    {"val": "[dato real ${isIndustry ? 'del sector' : 'de la empresa'}]", "label": "[etiqueta]"},
     {"val": "2", "label": "Dimensiones de valor"}
   ],
   "dim_a_id": "ventas_tat|ventas_comerciales|operaciones_tiendas|customer_success|training",
   "dim_a_titulo": "titulo de la dimension A (5-7 palabras)",
-  "dim_a_descripcion": "descripcion de dimension A (2 oraciones, especifica para ${empresa})",
-  "dim_a_rol": "rol del que hace preguntas en dimension A",
+  "dim_a_descripcion": "descripcion de dimension A (2 oraciones, ${isIndustry ? 'generica para el sector' : 'especifica para ' + empresa})",
+  "dim_a_rol": "rol del que hace preguntas en dimension A${isIndustry ? ' (rol tipico del sector)' : ''}",
   "dim_b_id": "canal_moderno|postventa|distribucion_red|trade_marketing",
   "dim_b_titulo": "titulo de la dimension B (5-7 palabras)",
-  "dim_b_descripcion": "descripcion de dimension B (2 oraciones, especifica para ${empresa})",
-  "dim_b_rol": "rol del que hace preguntas en dimension B"
+  "dim_b_descripcion": "descripcion de dimension B (2 oraciones, ${isIndustry ? 'generica para el sector' : 'especifica para ' + empresa})",
+  "dim_b_rol": "rol del que hace preguntas en dimension B${isIndustry ? ' (rol tipico del sector)' : ''}"
 }`);
 
   // --- Llamada 2: Casos A ---
   console.log('   Generando casos Dimension A...');
-  const casosA = await callLLM(systemPrompt, `Genera los 3 casos conversacionales de la Dimension A para ${empresa}${paisLabel}.
+  const casosA = await callLLM(systemPrompt, `Genera los 3 casos conversacionales de la Dimension A para ${targetLabel}${paisLabel}.
 Idioma: ${idioma}. Sin tildes, sin guiones largos, sin emojis.
 
-DATOS DE LA EMPRESA: ${JSON.stringify(researchData, null, 2)}
+DATOS ${isIndustry ? 'DE LA INDUSTRIA' : 'DE LA EMPRESA'}: ${JSON.stringify(researchData, null, 2)}
 DIMENSION A: ${base.dim_a_titulo} — Rol: ${base.dim_a_rol}
-
+${industryConstraint}
 REGLAS CRITICAS:
 - A1: el ${base.dim_a_rol} necesita saber QUE HACER AHORA (prioridades en tiempo real)
 - A2: ampliacion de pedido/ticket con cross-selling basado en patrones reales
-- A3: manejo de objecion especifica del sector de ${empresa}
-- Las preguntas DEBEN incluir nombres reales de productos/lugares/situaciones de ${empresa}${pais ? ` en ${pais}` : ''}
-- Las respuestas DEBEN tener datos especificos: porcentajes, cantidades, nombres reales${pais ? `\n- TODOS los escenarios, ciudades, tiendas y referencias geograficas deben ser de ${pais}. NO menciones ciudades ni datos de otros paises.` : ''}${enfoque ? `\n- El enfoque del caso es "${enfoque}". Los escenarios deben estar alineados con este enfoque.` : ''}
+- A3: manejo de objecion especifica del sector ${isIndustry ? empresa : 'de ' + empresa}
+- Las preguntas DEBEN incluir nombres ${isIndustry ? 'tipicos de productos/lugares/situaciones del sector' : 'reales de productos/lugares/situaciones de ' + empresa}${pais ? ` en ${pais}` : ''}
+- Las respuestas DEBEN tener datos especificos: porcentajes, cantidades, nombres ${isIndustry ? 'representativos' : 'reales'}${pais ? `\n- TODOS los escenarios, ciudades, tiendas y referencias geograficas deben ser de ${pais}. NO menciones ciudades ni datos de otros paises.` : ''}${enfoque ? `\n- El enfoque del caso es "${enfoque}". Los escenarios deben estar alineados con este enfoque.` : ''}
 
 Devuelve SOLO este JSON sin backticks:
 {
@@ -121,17 +129,17 @@ Devuelve SOLO este JSON sin backticks:
 
   // --- Llamada 3: Casos B + Propuesta ---
   console.log('   Generando casos Dimension B y propuesta de valor...');
-  const casosB = await callLLM(systemPrompt, `Genera los 3 casos de Dimension B y la propuesta de valor para ${empresa}${paisLabel}.
+  const casosB = await callLLM(systemPrompt, `Genera los 3 casos de Dimension B y la propuesta de valor para ${targetLabel}${paisLabel}.
 Idioma: ${idioma}. Sin tildes, sin guiones largos, sin emojis.
 
-DATOS DE LA EMPRESA: ${JSON.stringify(researchData, null, 2)}
+DATOS ${isIndustry ? 'DE LA INDUSTRIA' : 'DE LA EMPRESA'}: ${JSON.stringify(researchData, null, 2)}
 DIMENSION B: ${base.dim_b_titulo} — Rol: ${base.dim_b_rol}
-
+${industryConstraint}
 REGLAS CRITICAS:
 - B1: ejecucion segun estandar de marca (el empleado del punto de contacto)
 - B2: alerta urgente / quiebre / situacion que hay que resolver AHORA
 - B3: pregunta de gerente/director sobre visibilidad de toda la red
-- Usar nombres reales de productos, tiendas, zonas de ${empresa}${pais ? ` en ${pais}` : ''}${pais ? `\n- TODOS los escenarios, ciudades, tiendas y referencias geograficas deben ser de ${pais}. NO menciones ciudades ni datos de otros paises.` : ''}${enfoque ? `\n- El enfoque del caso es "${enfoque}". Los escenarios deben estar alineados con este enfoque.` : ''}
+- Usar nombres ${isIndustry ? 'tipicos de productos, tiendas, zonas del sector' : 'reales de productos, tiendas, zonas de ' + empresa}${pais ? ` en ${pais}` : ''}${pais ? `\n- TODOS los escenarios, ciudades, tiendas y referencias geograficas deben ser de ${pais}. NO menciones ciudades ni datos de otros paises.` : ''}${enfoque ? `\n- El enfoque del caso es "${enfoque}". Los escenarios deben estar alineados con este enfoque.` : ''}
 
 Devuelve SOLO este JSON sin backticks:
 {
@@ -169,35 +177,44 @@ Devuelve SOLO este JSON sin backticks:
   return { empresa, ...base, ...casosA, ...casosB };
 }
 
-export async function buildOnePagerContent(empresa, pais, idioma, enfoque, researchData, infoExtra) {
+export async function buildOnePagerContent(empresa, pais, idioma, enfoque, researchData, infoExtra, targetMode = 'company') {
+  const isIndustry = targetMode === 'industry';
   const isEnglish = idioma?.toLowerCase().includes('ingles') || idioma?.toLowerCase().includes('english');
   const lang = isEnglish ? 'English' : 'Spanish';
   const systemPrompt = isEnglish
-    ? `You are an expert in B2B marketing and sales enablement for BucketsAI. You generate precise, concrete, company-specific one-pager sales content. Never use emojis or long dashes. Use direct, persuasive language. ALL output must be in English.`
-    : `Eres un experto en marketing B2B y sales enablement para BucketsAI. Generas contenido de one-pagers de venta precisos, concretos y especificos para cada empresa y enfoque. Nunca uses emojis, guiones largos ni tildes. Todo en lenguaje directo y persuasivo.`;
+    ? (isIndustry
+      ? `You are an expert in B2B marketing and sales enablement for BucketsAI. You generate precise, concrete one-pager sales content for an INDUSTRY/SECTOR, not a specific company. Content must apply to any company in the sector. Use typical sector examples with fictional names if needed. Never use emojis or long dashes. ALL output must be in English.`
+      : `You are an expert in B2B marketing and sales enablement for BucketsAI. You generate precise, concrete, company-specific one-pager sales content. Never use emojis or long dashes. Use direct, persuasive language. ALL output must be in English.`)
+    : (isIndustry
+      ? `Eres un experto en marketing B2B y sales enablement para BucketsAI. Generas contenido de one-pagers de venta para una INDUSTRIA o SECTOR, no para una empresa especifica. El contenido debe aplicar a cualquier empresa del sector. Usa ejemplos tipicos con nombres ficticios si necesitas. Nunca uses emojis, guiones largos ni tildes. Todo en lenguaje directo y persuasivo.`
+      : `Eres un experto en marketing B2B y sales enablement para BucketsAI. Generas contenido de one-pagers de venta precisos, concretos y especificos para cada empresa y enfoque. Nunca uses emojis, guiones largos ni tildes. Todo en lenguaje directo y persuasivo.`);
 
   const paisLabel = pais ? ` (${pais})` : '';
   const paisConstraint = pais
     ? `\nCOUNTRY RESTRICTION: All content must be specific to ${pais}.`
+    : '';
+  const industryConstraint = isIndustry
+    ? `\nINDUSTRY MODE: This one-pager is GENERIC for the "${empresa}" industry. Do NOT name any specific company as the protagonist. Use phrases like "a typical ${empresa} company", "teams in ${empresa}", etc. You may mention real companies as REFERENCES, but the content must apply to ANY company in the sector.`
     : '';
 
   const langInstruction = isEnglish
     ? `\n\nCRITICAL LANGUAGE REQUIREMENT: ALL text content in the JSON must be written in ENGLISH. Every single field value — titles, descriptions, bullets, quotes, labels — must be in English. Do NOT write any field in Spanish.`
     : '';
 
-  const onepager = await callLLM(systemPrompt, `${isEnglish ? 'Generate' : 'Genera'} the content for a BucketsAI sales one-pager targeting ${empresa}${paisLabel}.
+  const targetLabel = isIndustry ? `the ${empresa} industry` : empresa;
+  const onepager = await callLLM(systemPrompt, `${isEnglish ? 'Generate' : 'Genera'} the content for a BucketsAI sales one-pager targeting ${isIndustry ? 'the ' + empresa + ' industry' : empresa}${paisLabel}.
 
 BUCKETSAI KNOWLEDGE:
 ${knowledge}
 
-COMPANY DATA:
+${isIndustry ? 'INDUSTRY' : 'COMPANY'} DATA:
 ${JSON.stringify(researchData, null, 2)}
 
 EXTRA INFO: ${infoExtra || 'none'}
 LANGUAGE: ${lang}
-FOCUS: ${enfoque}${paisConstraint}${langInstruction}
+FOCUS: ${enfoque}${paisConstraint}${langInstruction}${industryConstraint}
 
-${isEnglish ? 'IMPORTANT' : 'IMPORTANTE'}: Adapt EVERYTHING to the focus "${enfoque}" and company ${empresa}. Content must be hyper-specific — use real product names, processes, roles, and situations.
+${isEnglish ? 'IMPORTANT' : 'IMPORTANTE'}: Adapt EVERYTHING to the focus "${enfoque}" and ${isIndustry ? 'the ' + empresa + ' industry' : 'company ' + empresa}. Content must be ${isIndustry ? 'sector-specific — use typical roles, processes, and situations common across the industry' : 'hyper-specific — use real product names, processes, roles, and situations'}.
 
 ${isEnglish ? 'Return ONLY this JSON without backticks' : 'Devuelve SOLO este JSON sin backticks'}:
 {
@@ -277,16 +294,24 @@ ${isEnglish ? 'Return ONLY this JSON without backticks' : 'Devuelve SOLO este JS
   return onepager;
 }
 
-export async function buildDeckContent(empresa, pais, idioma, enfoque, researchData, infoExtra, useCaseContent) {
+export async function buildDeckContent(empresa, pais, idioma, enfoque, researchData, infoExtra, useCaseContent, targetMode = 'company') {
+  const isIndustry = targetMode === 'industry';
   const isEnglish = idioma?.toLowerCase().includes('ingles') || idioma?.toLowerCase().includes('english');
   const lang = isEnglish ? 'English' : 'Spanish';
   const systemPrompt = isEnglish
-    ? `You are an expert in B2B sales enablement for BucketsAI. You create hyper-specific, personalized commercial deck content. Never use emojis. ALL output must be in English.`
-    : `Eres un experto en sales enablement B2B para BucketsAI. Creas contenido de decks comerciales hiper-especificos y personalizados. Nunca uses emojis ni tildes. Todo en lenguaje directo y persuasivo.`;
+    ? (isIndustry
+      ? `You are an expert in B2B sales enablement for BucketsAI. You create commercial deck content for an INDUSTRY/SECTOR, not a specific company. Content must apply to any company in the sector. Never use emojis. ALL output must be in English.`
+      : `You are an expert in B2B sales enablement for BucketsAI. You create hyper-specific, personalized commercial deck content. Never use emojis. ALL output must be in English.`)
+    : (isIndustry
+      ? `Eres un experto en sales enablement B2B para BucketsAI. Creas contenido de decks comerciales para una INDUSTRIA o SECTOR, no para una empresa especifica. El contenido debe aplicar a cualquier empresa del sector. Nunca uses emojis ni tildes. Todo en lenguaje directo y persuasivo.`
+      : `Eres un experto en sales enablement B2B para BucketsAI. Creas contenido de decks comerciales hiper-especificos y personalizados. Nunca uses emojis ni tildes. Todo en lenguaje directo y persuasivo.`);
 
   const paisLabel = pais ? ` (${pais})` : '';
   const paisConstraint = pais
     ? `\nRESTRICCION DE PAIS: Todo el contenido debe ser especifico para ${pais}. Usa nombres de ciudades, zonas y datos que correspondan UNICAMENTE a ${pais}.`
+    : '';
+  const industryConstraint = isIndustry
+    ? `\nMODO INDUSTRIA: Este deck es GENERICO para toda la industria "${empresa}". NO nombres ninguna empresa real especifica como protagonista. Usa frases como "una empresa tipica del sector", "los equipos del sector". Puedes mencionar empresas reales como REFERENCIAS. La slide de DEMO debe usar un ejemplo ficticio representativo del sector, no una empresa real.`
     : '';
   const langInstruction = isEnglish
     ? `\n\nCRITICAL: ALL text must be in ENGLISH. Every field value must be in English.`
@@ -296,29 +321,30 @@ export async function buildDeckContent(empresa, pais, idioma, enfoque, researchD
     ? `\nDATOS DEL CASO DE USO YA GENERADO (usa esta informacion para mayor especificidad):\n${JSON.stringify(useCaseContent, null, 2)}`
     : '';
 
-  const deck = await callLLM(systemPrompt, `Genera el contenido completo para un deck comercial de BucketsAI personalizado para ${empresa}${paisLabel}.
+  const targetLabel = isIndustry ? `la industria ${empresa}` : empresa;
+  const deck = await callLLM(systemPrompt, `Genera el contenido completo para un deck comercial de BucketsAI ${isIndustry ? 'para la industria' : 'personalizado para'} ${empresa}${paisLabel}.
 
 CONOCIMIENTO DE BUCKETSAI:
 ${knowledge}
 
-DATOS DE LA EMPRESA:
+DATOS ${isIndustry ? 'DE LA INDUSTRIA' : 'DE LA EMPRESA'}:
 ${JSON.stringify(researchData, null, 2)}
 
 INFO EXTRA: ${infoExtra || 'ninguna'}
 IDIOMA: ${lang}
-ENFOQUE: ${enfoque}${paisConstraint}${langInstruction}${useCaseContext}
+ENFOQUE: ${enfoque}${paisConstraint}${langInstruction}${useCaseContext}${industryConstraint}
 
 CRITICO:
-- Las slides de PROBLEMA, PROFUNDIDAD y SOLUCION deben hablar del problema de la INDUSTRIA/SECTOR, NO de ${empresa} directamente. No sabemos si ${empresa} tiene ese problema. Hablamos del reto comun del sector.
-- La slide de DEMO es donde SI personalizamos para ${empresa}: mostramos un caso de uso concreto como si fuera para ellos.
-- La slide de IMPACTO habla del sector en general, NO nombra a ${empresa}.
+- Las slides de PROBLEMA, PROFUNDIDAD y SOLUCION deben hablar del problema de la INDUSTRIA/SECTOR${isIndustry ? ' ' + empresa : ', NO de ' + empresa + ' directamente'}. ${isIndustry ? 'Todo el deck habla del sector en general.' : 'No sabemos si ' + empresa + ' tiene ese problema. Hablamos del reto comun del sector.'}
+- La slide de DEMO ${isIndustry ? 'debe usar un ejemplo ficticio representativo del sector (inventa un nombre de empresa tipica)' : 'es donde SI personalizamos para ' + empresa + ': mostramos un caso de uso concreto como si fuera para ellos'}.
+- La slide de IMPACTO habla del sector en general${isIndustry ? '' : ', NO nombra a ' + empresa}.
 - El objetivo de este deck es hacer DISCOVERY: descubrir los problemas del prospecto, no asumir que los tiene.
 - Usa datos reales de la industria, roles tipicos del sector, y situaciones comunes del enfoque "${enfoque}".
 
 Devuelve SOLO este JSON sin backticks:
 {
-  "cover_tagline": "Frase poderosa de 12-18 palabras sobre como BucketsAI resuelve el problema central del sector de ${empresa} en ${enfoque}",
-  "sector_label": "Nombre corto del sector/industria al que pertenece ${empresa} (ej: seguros, retail, banca, logistica)",
+  "cover_tagline": "Frase poderosa de 12-18 palabras sobre como BucketsAI resuelve el problema central ${isIndustry ? 'del sector ' + empresa : 'del sector de ' + empresa} en ${enfoque}",
+  "sector_label": "${isIndustry ? empresa : 'Nombre corto del sector/industria al que pertenece ' + empresa + ' (ej: seguros, retail, banca, logistica)'}",
 
   "problem_headline": "Frase impactante de 10-15 palabras sobre el problema real del SECTOR/INDUSTRIA. NO menciones a ${empresa}.",
   "problem_has_items": [
@@ -363,10 +389,10 @@ Devuelve SOLO este JSON sin backticks:
     "NO cambia [flujo existente tipico]"
   ],
 
-  "demo_headline": "Asi se tomaria una decision con BucketsAi en ${empresa}",
-  "demo_description": "3 oraciones sobre el flujo: el [rol de ${empresa}] describe la situacion, BucketsAi cruza con reglas, entrega decision clara. AQUI SI personaliza para ${empresa}.",
-  "demo_user_message": "Pregunta realista y detallada de un ${enfoque} de ${empresa}. Incluir nombre de cliente, datos especificos, situacion concreta, producto. 3-4 oraciones. AQUI SI usa datos de ${empresa}.",
-  "demo_ai_response": "Respuesta de BucketsAI con recomendacion exacta: producto, precio, condiciones, siguiente paso. 4-5 oraciones con datos concretos de ${empresa}.",
+  "demo_headline": "Asi se tomaria una decision con BucketsAi en ${isIndustry ? 'una empresa del sector ' + empresa : empresa}",
+  "demo_description": "3 oraciones sobre el flujo: el [rol ${isIndustry ? 'tipico del sector' : 'de ' + empresa}] describe la situacion, BucketsAi cruza con reglas, entrega decision clara.${isIndustry ? ' Usa un ejemplo ficticio representativo.' : ' AQUI SI personaliza para ' + empresa + '.'}",
+  "demo_user_message": "Pregunta realista y detallada de un ${enfoque} ${isIndustry ? 'del sector ' + empresa + '. Usa un nombre de empresa ficticio representativo' : 'de ' + empresa}. Incluir nombre de cliente, datos especificos, situacion concreta, producto. 3-4 oraciones.",
+  "demo_ai_response": "Respuesta de BucketsAI con recomendacion exacta: producto, precio, condiciones, siguiente paso. 4-5 oraciones con datos concretos ${isIndustry ? 'del sector' : 'de ' + empresa}.",
 
   "dim_a_titulo": "Dimension A: titulo 5-7 palabras (ej: Inteligencia comercial en tiempo real)",
   "dim_a_rol": "Rol de dimension A tipico del sector",

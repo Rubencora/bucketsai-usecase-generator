@@ -126,13 +126,15 @@ function buildOnePagerHTML(op, empresa, useCaseContent, idioma) {
     }
     .hero-right {
       flex-shrink: 0;
-      width: 340px;
+      width: 380px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .hero-right img {
       width: 100%;
       height: auto;
       display: block;
-      border-radius: 4px;
     }
 
     /* ===== PAIN SECTION ===== */
@@ -650,8 +652,18 @@ function buildOnePagerHTML(op, empresa, useCaseContent, idioma) {
       gap: 20px;
       align-items: center;
     }
-    .anchor-phone { flex-shrink: 0; width: 220px; }
-    .anchor-phone img { width: 100%; height: auto; border-radius: 4px; }
+    .anchor-phone {
+      flex-shrink: 0;
+      width: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .anchor-phone img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
     .anchor-results-box {
       flex: 1;
       background: ${h(C.blueLight)};

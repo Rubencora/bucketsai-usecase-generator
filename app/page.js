@@ -115,6 +115,7 @@ function ProgressStep({ message, index, isLast }) {
 
 export default function Home() {
   const [form, setForm] = useState({
+    targetMode: 'company',
     empresa: '',
     url: '',
     pais: '',
@@ -149,6 +150,8 @@ export default function Home() {
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
+
+  const isIndustryMode = form.targetMode === 'industry';
 
   const handleGenerate = async () => {
     if (!form.empresa.trim()) return;
@@ -263,7 +266,7 @@ export default function Home() {
                 <span className="text-brand-blue">profesional</span> al instante
               </h1>
               <p className="text-brand-text-muted text-lg max-w-2xl mx-auto leading-relaxed">
-                Ingresa el nombre de una empresa y genera automaticamente un documento Word con estructura, contenido y diseno de marca BucketsAI.
+                Ingresa el nombre de una empresa o industria y genera automaticamente documentos de venta con estructura, contenido y diseno de marca BucketsAI.
               </p>
             </div>
 
@@ -280,10 +283,41 @@ export default function Home() {
             {/* Form Card */}
             <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04),0_8px_24px_rgba(68,112,220,0.08)] border border-brand-border p-8 md:p-10">
               <div className="space-y-6">
-                {/* Empresa — primary field, larger */}
+                {/* Mode toggle: Company vs Industry */}
+                <div>
+                  <label className="block text-sm font-semibold text-brand-navy-text mb-3">
+                    Generar para
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { value: 'company', label: 'Empresa', desc: 'Caso personalizado para una empresa especifica' },
+                      { value: 'industry', label: 'Industria', desc: 'Caso generico para un sector o industria' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setForm({ ...form, targetMode: opt.value, empresa: '', url: '' })}
+                        className={`text-left p-3.5 rounded-xl border-2 cursor-pointer transition-all duration-150 ${
+                          form.targetMode === opt.value
+                            ? 'border-brand-blue bg-brand-blue-lighter ring-2 ring-brand-blue/20'
+                            : 'border-brand-border bg-brand-page-bg hover:border-brand-blue-med hover:bg-white'
+                        }`}
+                      >
+                        <span className={`block text-sm font-semibold ${form.targetMode === opt.value ? 'text-brand-blue' : 'text-brand-navy-text'}`}>
+                          {opt.label}
+                        </span>
+                        <span className="block text-xs text-brand-gray-mid mt-0.5 leading-snug">
+                          {opt.desc}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Empresa / Industria — primary field, larger */}
                 <div>
                   <label htmlFor="empresa" className="block text-sm font-semibold text-brand-navy-text mb-2">
-                    Nombre de la empresa <span className="text-brand-orange">*</span>
+                    {isIndustryMode ? 'Nombre de la industria' : 'Nombre de la empresa'} <span className="text-brand-orange">*</span>
                   </label>
                   <input
                     ref={empresaRef}
@@ -292,13 +326,14 @@ export default function Home() {
                     name="empresa"
                     value={form.empresa}
                     onChange={handleChange}
-                    placeholder="Ej: Grupo Nutresa, Bancolombia, Rappi..."
+                    placeholder={isIndustryMode ? 'Ej: Seguros, Retail, Banca, Logistica...' : 'Ej: Grupo Nutresa, Bancolombia, Rappi...'}
                     autoComplete="organization"
                     className="w-full px-5 py-4 rounded-xl border-2 border-brand-border bg-brand-page-bg text-brand-navy-text text-lg placeholder:text-brand-gray-mid focus:outline-none focus:border-brand-blue focus:bg-white focus:ring-4 focus:ring-brand-blue/10"
                   />
                 </div>
 
-                {/* URL del sitio web */}
+                {/* URL del sitio web — only in company mode */}
+                {!isIndustryMode && (
                 <div>
                   <label htmlFor="url" className="block text-sm font-semibold text-brand-navy-text mb-2">
                     Sitio web de la empresa <span className="font-normal text-brand-gray-mid">(opcional)</span>
@@ -314,6 +349,7 @@ export default function Home() {
                     className="w-full px-4 py-3 rounded-xl border-2 border-brand-border bg-brand-page-bg text-brand-navy-text placeholder:text-brand-gray-mid focus:outline-none focus:border-brand-blue focus:bg-white focus:ring-4 focus:ring-brand-blue/10"
                   />
                 </div>
+                )}
 
                 {/* Pais + Idioma row */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -453,7 +489,7 @@ export default function Home() {
                     value={form.infoExtra}
                     onChange={handleChange}
                     rows={3}
-                    placeholder="Ej: La empresa tiene 500 vendedores en ruta, opera en 3 paises, el foco es canal TAT..."
+                    placeholder={isIndustryMode ? 'Ej: Enfocarse en seguros de vida, empresas con mas de 200 asesores, mercado latinoamericano...' : 'Ej: La empresa tiene 500 vendedores en ruta, opera en 3 paises, el foco es canal TAT...'}
                     className="w-full px-4 py-3 rounded-xl border-2 border-brand-border bg-brand-page-bg text-brand-navy-text placeholder:text-brand-gray-mid focus:outline-none focus:border-brand-blue focus:bg-white focus:ring-4 focus:ring-brand-blue/10 resize-none"
                   />
                 </div>
@@ -465,7 +501,7 @@ export default function Home() {
                   className="w-full py-4 rounded-xl bg-brand-blue text-white font-bold text-lg cursor-pointer hover:bg-brand-blue-med disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 focus:outline-none focus:ring-4 focus:ring-brand-blue/30"
                 >
                   <IconSparkles className="w-5 h-5" />
-                  {form.docType === 'onepager' ? 'Generar One-Pager' : form.docType === 'deck' ? 'Generar Deck Comercial' : form.docType === 'both' ? 'Generar Todos los Documentos' : 'Generar caso de uso'}
+                  {form.docType === 'onepager' ? 'Generar One-Pager' : form.docType === 'deck' ? 'Generar Deck Comercial' : form.docType === 'both' ? 'Generar Todos los Documentos' : isIndustryMode ? 'Generar caso de uso (industria)' : 'Generar caso de uso'}
                 </button>
                 <p className="text-center text-xs text-brand-gray-mid">
                   Cmd + Enter para generar
@@ -483,7 +519,7 @@ export default function Home() {
 
             <div className="mt-10 mb-8 text-center">
               <h2 className="text-2xl font-bold text-brand-navy-text mb-1">
-                Generando caso de uso
+                {isIndustryMode ? 'Generando caso de uso (industria)' : 'Generando caso de uso'}
               </h2>
               <p className="text-brand-text-muted">{form.empresa}</p>
             </div>

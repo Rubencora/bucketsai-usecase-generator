@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { getSession } from '../../../src/auth.js';
-import { researchCompany } from '../../../src/researcher.js';
+import { researchCompany, researchIndustry } from '../../../src/researcher.js';
 import { buildContent, buildOnePagerContent, buildDeckContent } from '../../../src/content_builder.js';
 import { generateDocx } from '../../../src/doc_generator.js';
 import { generatePdf } from '../../../src/pdf_generator.js';
@@ -16,7 +16,7 @@ export const maxDuration = 180;
 
 export async function POST(request) {
   const session = await getSession();
-  const { empresa, url, pais, idioma, enfoque, infoExtra, docType = 'usecase', deckEngine = 'auto' } = await request.json();
+  const { empresa, url, pais, idioma, enfoque, infoExtra, docType = 'usecase', deckEngine = 'auto', targetMode = 'company' } = await request.json();
 
   const wantUseCase = docType === 'usecase' || docType === 'both';
   const wantOnePager = docType === 'onepager' || docType === 'both';
@@ -31,9 +31,12 @@ export async function POST(request) {
 
       try {
         // Step 1: Research
-        send({ type: 'step', message: `Investigando ${empresa}...` });
-        const researchData = await researchCompany(empresa, pais, infoExtra, url);
-        send({ type: 'step', message: `Datos de ${empresa} obtenidos` });
+        const isIndustry = targetMode === 'industry';
+        send({ type: 'step', message: isIndustry ? `Investigando industria: ${empresa}...` : `Investigando ${empresa}...` });
+        const researchData = isIndustry
+          ? await researchIndustry(empresa, pais, infoExtra)
+          : await researchCompany(empresa, pais, infoExtra, url);
+        send({ type: 'step', message: isIndustry ? `Datos de la industria ${empresa} obtenidos` : `Datos de ${empresa} obtenidos` });
 
         let content = null;
         let docxFilename = null;
@@ -45,7 +48,7 @@ export async function POST(request) {
         // Use Case documents (PDF + Word)
         if (wantUseCase) {
           send({ type: 'step', message: 'Generando contenido con IA...' });
-          content = await buildContent(empresa, pais, idioma, enfoque, researchData, infoExtra);
+          content = await buildContent(empresa, pais, idioma, enfoque, researchData, infoExtra, targetMode);
           send({ type: 'step', message: 'Contenido completo generado' });
 
           send({ type: 'step', message: 'Construyendo documento Word...' });
@@ -62,7 +65,7 @@ export async function POST(request) {
         // One-pager
         if (wantOnePager) {
           send({ type: 'step', message: 'Generando contenido del One-Pager...' });
-          const onepagerContent = await buildOnePagerContent(empresa, pais, idioma, enfoque, researchData, infoExtra);
+          const onepagerContent = await buildOnePagerContent(empresa, pais, idioma, enfoque, researchData, infoExtra, targetMode);
           send({ type: 'step', message: 'Construyendo One-Pager PDF...' });
           const onepagerPath = await generateOnePager(onepagerContent, empresa, content, idioma);
           onepagerFilename = onepagerPath.split('/').pop();
@@ -77,7 +80,7 @@ export async function POST(request) {
         // Commercial Deck
         if (wantDeck) {
           send({ type: 'step', message: 'Generando contenido del Deck Comercial...' });
-          const deckContent = await buildDeckContent(empresa, pais, idioma, enfoque, researchData, infoExtra, content);
+          const deckContent = await buildDeckContent(empresa, pais, idioma, enfoque, researchData, infoExtra, content, targetMode);
 
           // Check if user can use Gamma (admin always can, others need gamma_enabled)
           let canUseGamma = false;
@@ -151,9 +154,9 @@ export async function POST(request) {
         try {
           const userId = session?.userId || null;
           await pool.query(
-            `INSERT INTO use_cases (user_id, empresa, pais, idioma, enfoque, info_extra, sector, dim_a, dim_b, pdf_filename, docx_filename, onepager_filename, onepager_docx_filename, deck_filename)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
-            [userId, empresa, pais, idioma, enfoque, infoExtra, researchData.sector, content?.dim_a_titulo || null, content?.dim_b_titulo || null, pdfFilename, docxFilename, onepagerFilename, onepagerDocxFilename, deckFilename]
+            `INSERT INTO use_cases (user_id, empresa, pais, idioma, enfoque, info_extra, sector, dim_a, dim_b, pdf_filename, docx_filename, onepager_filename, onepager_docx_filename, deck_filename, target_mode)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+            [userId, empresa, pais, idioma, enfoque, infoExtra, researchData.sector, content?.dim_a_titulo || null, content?.dim_b_titulo || null, pdfFilename, docxFilename, onepagerFilename, onepagerDocxFilename, deckFilename, targetMode]
           );
         } catch (dbErr) {
           console.error('Error saving to DB:', dbErr.message);

@@ -72,6 +72,67 @@ async function search(query) {
   return searchDuckDuckGo(query);
 }
 
+export async function researchIndustry(industria, pais, infoExtra) {
+  const paisContext = pais ? ` ${pais}` : '';
+  const queries = [
+    `${industria} industria tendencias retos${paisContext}`,
+    `${industria} sector empresas principales desafios${paisContext}`,
+    `${industria} fuerza de ventas equipos comerciales operaciones${paisContext}`,
+    `${industria} transformacion digital automatizacion${paisContext}`,
+    `${industria} tamano mercado datos estadisticas${paisContext}`,
+  ];
+
+  console.log(`   Buscando informacion de la industria ${industria}...`);
+  const searchResults = await Promise.all(queries.map((q) => search(q)));
+  const allResults = searchResults.join('\n\n---\n\n');
+
+  if (!allResults.trim()) {
+    console.log('   Advertencia: no se encontraron resultados de busqueda. Se usara contexto del usuario.');
+  }
+
+  const paisInstruction = pais
+    ? `\n\nIMPORTANTE: Enfocate EXCLUSIVAMENTE en la industria de "${industria}" en ${pais}. Solo incluye datos, cifras y tendencias que correspondan a ${pais}.`
+    : '';
+
+  const prompt = `Analiza estos resultados de busqueda sobre la INDUSTRIA "${industria}"${pais ? ` en ${pais}` : ''} y devuelve SOLO un JSON con:
+{
+  "descripcion": "descripcion general de la industria ${industria} en ${pais || 'Latinoamerica'} (2-3 oraciones)",
+  "sector": "${industria}",
+  "tamano": "tamano aproximado de la industria (empresas, empleados, facturacion)",
+  "presencia": "cobertura geografica de la industria${pais ? ` en ${pais}` : ''}",
+  "canales": "canales de venta y distribucion tipicos de la industria",
+  "productos": ["producto/servicio tipico 1", "producto 2", "producto 3"],
+  "fuerza_comercial": "estructura tipica de equipos comerciales en la industria",
+  "puntos_venta": "canales de atencion y puntos de contacto tipicos",
+  "kpis_publicos": ["kpi tipico 1", "kpi 2", "kpi 3", "kpi 4"],
+  "retos": "principales desafios operativos y comerciales de la industria",
+  "sector_tipo": "retail|banca|seguros|telco|logistica|bpo|otro",
+  "empresas_referencia": ["empresa lider 1", "empresa 2", "empresa 3"]
+}
+Si no encuentras un dato, usa null. SOLO el JSON, sin backticks ni texto adicional.${paisInstruction}
+
+Resultados de busqueda:
+${allResults}
+
+Informacion adicional del usuario: ${infoExtra || 'ninguna'}`;
+
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    max_tokens: 1500,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  const text = response.choices[0].message.content.trim();
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (match) return JSON.parse(match[0]);
+    throw new Error('No se pudo parsear la respuesta del researcher: ' + text.slice(0, 200));
+  }
+}
+
 export async function researchCompany(empresa, pais, infoExtra, url) {
   // Run crawl and search in parallel
   const paisContext = pais ? ` ${pais}` : '';
