@@ -21,9 +21,14 @@ export async function POST(request) {
     return Response.json({ error: 'Tu email aun no ha sido verificado. Revisa tu bandeja de entrada.' }, { status: 403 });
   }
 
-  const token = await createSession({ id: user.id, email: user.email, name: user.name, role: user.role });
+  if (user.expires_at && new Date(user.expires_at) < new Date()) {
+    return Response.json({ error: 'Tu acceso de prueba ha expirado. Contacta al administrador para renovarlo.' }, { status: 403 });
+  }
+
+  const token = await createSession({ id: user.id, email: user.email, name: user.name, role: user.role, expires_at: user.expires_at });
 
   const response = Response.json({ ok: true, user: { email: user.email, name: user.name, role: user.role } });
-  response.headers.set('Set-Cookie', `${COOKIE_NAME}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${7 * 24 * 60 * 60}`);
+  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+  response.headers.set('Set-Cookie', `${COOKIE_NAME}=${token}; Path=/; HttpOnly; SameSite=Lax${secure}; Max-Age=${7 * 24 * 60 * 60}`);
   return response;
 }

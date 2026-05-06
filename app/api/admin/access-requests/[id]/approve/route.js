@@ -25,13 +25,16 @@ export async function POST(request, { params }) {
   const existing = await pool.query('SELECT id FROM users WHERE email = $1', [req.email]);
   let userId;
 
+  const userExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
   if (existing.rows.length > 0) {
     userId = existing.rows[0].id;
+    await pool.query('UPDATE users SET expires_at = $1 WHERE id = $2', [userExpiresAt, userId]);
   } else {
-    // Create user with empresa as name, no password, unverified
+    // Create user with empresa as name, no password, unverified, 24h trial
     const { rows: newUser } = await pool.query(
-      'INSERT INTO users (name, email, password_hash, verified, role) VALUES ($1, $2, $3, false, $4) RETURNING id',
-      [req.empresa, req.email, '', 'user']
+      'INSERT INTO users (name, email, password_hash, verified, role, expires_at) VALUES ($1, $2, $3, false, $4, $5) RETURNING id',
+      [req.empresa, req.email, '', 'user', userExpiresAt]
     );
     userId = newUser[0].id;
   }
@@ -60,7 +63,7 @@ export async function POST(request, { params }) {
           <p style="color: #6B7280; line-height: 1.6;">Hola,</p>
           <p style="color: #6B7280; line-height: 1.6;">Tu solicitud de acceso para <strong>${req.empresa}</strong> al <strong>BucketsAI Use Case Generator</strong> ha sido aprobada. Para activar tu cuenta, crea tu contrasena haciendo clic en el siguiente boton:</p>
           <a href="${setupUrl}" style="display: inline-block; background: #4470DC; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 20px 0;">Activar mi cuenta</a>
-          <p style="color: #9CA3AF; font-size: 13px; line-height: 1.6;">Este enlace expira en 72 horas.</p>
+          <p style="color: #9CA3AF; font-size: 13px; line-height: 1.6;">Este enlace expira en 72 horas. Tu acceso de prueba tiene una duracion de <strong>24 horas</strong> a partir de ahora.</p>
           <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0;" />
           <p style="color: #9CA3AF; font-size: 12px;">BucketsAI - All your knowledge, one conversation away.</p>
         </div>

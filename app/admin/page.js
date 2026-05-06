@@ -10,6 +10,9 @@ export default function AdminPage() {
   const [useCases, setUseCases] = useState([]);
   const [accessRequests, setAccessRequests] = useState([]);
   const [approvingId, setApprovingId] = useState(null);
+  const [renewingId, setRenewingId] = useState(null);
+  const [revokingId, setRevokingId] = useState(null);
+  const [now, setNow] = useState(Date.now());
   const [loading, setLoading] = useState(true);
   const [showInvite, setShowInvite] = useState(false);
   const [inviteName, setInviteName] = useState('');
@@ -32,6 +35,22 @@ export default function AdminPage() {
     }).catch(() => setLoading(false));
   };
 
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const formatCountdown = (expiresAt) => {
+    if (!expiresAt) return null;
+    const diff = new Date(expiresAt).getTime() - now;
+    if (diff <= 0) return { label: 'Expirado', color: 'bg-red-50 text-red-500' };
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const label = h > 0 ? `${h}h ${m}m restantes` : `${m}m restantes`;
+    const color = h < 2 ? 'bg-amber-50 text-amber-600' : 'bg-green-50 text-green-600';
+    return { label, color };
+  };
+
   const handleApprove = async (requestId) => {
     if (!confirm('¿Aprobar esta solicitud y enviar email de invitacion?')) return;
     setApprovingId(requestId);
@@ -41,12 +60,49 @@ export default function AdminPage() {
       if (!res.ok) {
         alert(data.error || 'Error al aprobar');
       } else {
-        setAccessRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: 'approved' } : r));
+        const newExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        setAccessRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: 'approved', user_expires_at: newExpiresAt } : r));
       }
     } catch {
       alert('Error de conexion');
     } finally {
       setApprovingId(null);
+    }
+  };
+
+  const handleRenew = async (requestId) => {
+    if (!confirm('¿Renovar acceso por 24 horas adicionales desde ahora?')) return;
+    setRenewingId(requestId);
+    try {
+      const res = await fetch(`/api/admin/access-requests/${requestId}/renew`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Error al renovar');
+      } else {
+        setAccessRequests(prev => prev.map(r => r.id === requestId ? { ...r, user_expires_at: data.expires_at } : r));
+      }
+    } catch {
+      alert('Error de conexion');
+    } finally {
+      setRenewingId(null);
+    }
+  };
+
+  const handleRevoke = async (requestId, empresa) => {
+    if (!confirm(`¿Eliminar el acceso de ${empresa}? Esta accion no se puede deshacer.`)) return;
+    setRevokingId(requestId);
+    try {
+      const res = await fetch(`/api/admin/access-requests/${requestId}/revoke`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Error al eliminar');
+      } else {
+        setAccessRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: 'revoked', user_expires_at: null } : r));
+      }
+    } catch {
+      alert('Error de conexion');
+    } finally {
+      setRevokingId(null);
     }
   };
 
@@ -225,39 +281,70 @@ export default function AdminPage() {
                   <tr className="border-b border-brand-border bg-brand-page-bg">
                     <th className="text-left px-5 py-3 font-semibold text-brand-navy-text">Empresa</th>
                     <th className="text-left px-5 py-3 font-semibold text-brand-navy-text">Email</th>
-                    <th className="text-left px-5 py-3 font-semibold text-brand-navy-text">Teléfono / WhatsApp</th>
+                    <th className="text-left px-5 py-3 font-semibold text-brand-navy-text">Teléfono</th>
                     <th className="text-left px-5 py-3 font-semibold text-brand-navy-text">Estado</th>
+                    <th className="text-left px-5 py-3 font-semibold text-brand-navy-text">Tiempo restante</th>
                     <th className="text-left px-5 py-3 font-semibold text-brand-navy-text">Fecha</th>
-                    <th className="text-right px-5 py-3 font-semibold text-brand-navy-text">Acción</th>
+                    <th className="text-right px-5 py-3 font-semibold text-brand-navy-text">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {accessRequests.map((r) => (
-                    <tr key={r.id} className="border-b border-brand-border last:border-0 hover:bg-brand-page-bg/50">
-                      <td className="px-5 py-3 font-medium text-brand-navy-text">{r.empresa}</td>
-                      <td className="px-5 py-3 text-brand-text-muted">{r.email}</td>
-                      <td className="px-5 py-3 text-brand-text-muted">{r.telefono}</td>
-                      <td className="px-5 py-3">
-                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${r.status === 'approved' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
-                          {r.status === 'approved' ? 'Aprobado' : 'Pendiente'}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3 text-brand-gray-mid text-xs">{formatDate(r.created_at)}</td>
-                      <td className="px-5 py-3 text-right">
-                        {r.status === 'pending' && (
-                          <button
-                            onClick={() => handleApprove(r.id)}
-                            disabled={approvingId === r.id}
-                            className="text-xs font-semibold text-brand-blue hover:text-brand-blue-med cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                          >
-                            {approvingId === r.id ? 'Aprobando...' : 'Aprobar'}
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                  {accessRequests.map((r) => {
+                    const countdown = r.status === 'approved' ? formatCountdown(r.user_expires_at) : null;
+                    const statusLabel = r.status === 'approved' ? 'Aprobado' : r.status === 'revoked' ? 'Eliminado' : 'Pendiente';
+                    const statusColor = r.status === 'approved' ? 'bg-green-50 text-green-600' : r.status === 'revoked' ? 'bg-red-50 text-red-400' : 'bg-amber-50 text-amber-600';
+                    return (
+                      <tr key={r.id} className="border-b border-brand-border last:border-0 hover:bg-brand-page-bg/50">
+                        <td className="px-5 py-3 font-medium text-brand-navy-text">{r.empresa}</td>
+                        <td className="px-5 py-3 text-brand-text-muted">{r.email}</td>
+                        <td className="px-5 py-3 text-brand-text-muted">{r.telefono}</td>
+                        <td className="px-5 py-3">
+                          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${statusColor}`}>{statusLabel}</span>
+                        </td>
+                        <td className="px-5 py-3">
+                          {countdown ? (
+                            <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${countdown.color}`}>{countdown.label}</span>
+                          ) : (
+                            <span className="text-xs text-brand-gray-mid">—</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3 text-brand-gray-mid text-xs">{formatDate(r.created_at)}</td>
+                        <td className="px-5 py-3 text-right">
+                          <div className="flex gap-3 justify-end">
+                            {r.status === 'pending' && (
+                              <button
+                                onClick={() => handleApprove(r.id)}
+                                disabled={approvingId === r.id}
+                                className="text-xs font-semibold text-brand-blue hover:text-brand-blue-med cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                              >
+                                {approvingId === r.id ? 'Aprobando...' : 'Aprobar'}
+                              </button>
+                            )}
+                            {r.status === 'approved' && (
+                              <button
+                                onClick={() => handleRenew(r.id)}
+                                disabled={renewingId === r.id}
+                                className="text-xs font-semibold text-green-600 hover:text-green-700 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                              >
+                                {renewingId === r.id ? 'Renovando...' : 'Renovar'}
+                              </button>
+                            )}
+                            {(r.status === 'approved' || r.status === 'pending') && (
+                              <button
+                                onClick={() => handleRevoke(r.id, r.empresa)}
+                                disabled={revokingId === r.id}
+                                className="text-xs font-semibold text-red-400 hover:text-red-600 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                              >
+                                {revokingId === r.id ? 'Eliminando...' : 'Eliminar'}
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                   {accessRequests.length === 0 && (
-                    <tr><td colSpan={6} className="px-5 py-8 text-center text-brand-text-muted">No hay solicitudes de acceso aun</td></tr>
+                    <tr><td colSpan={7} className="px-5 py-8 text-center text-brand-text-muted">No hay solicitudes de acceso aun</td></tr>
                   )}
                 </tbody>
               </table>
