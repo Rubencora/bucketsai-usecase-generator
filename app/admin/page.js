@@ -8,6 +8,8 @@ export default function AdminPage() {
   const [tab, setTab] = useState('users');
   const [users, setUsers] = useState([]);
   const [useCases, setUseCases] = useState([]);
+  const [accessRequests, setAccessRequests] = useState([]);
+  const [approvingId, setApprovingId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showInvite, setShowInvite] = useState(false);
   const [inviteName, setInviteName] = useState('');
@@ -21,11 +23,31 @@ export default function AdminPage() {
     Promise.all([
       fetch('/api/admin/users').then((r) => r.json()),
       fetch('/api/admin/use-cases').then((r) => r.json()),
-    ]).then(([uData, ucData]) => {
+      fetch('/api/admin/access-requests').then((r) => r.json()),
+    ]).then(([uData, ucData, arData]) => {
       setUsers(uData.users || []);
       setUseCases(ucData.useCases || []);
+      setAccessRequests(arData.accessRequests || []);
       setLoading(false);
     }).catch(() => setLoading(false));
+  };
+
+  const handleApprove = async (requestId) => {
+    if (!confirm('¿Aprobar esta solicitud y enviar email de invitacion?')) return;
+    setApprovingId(requestId);
+    try {
+      const res = await fetch(`/api/admin/access-requests/${requestId}/approve`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Error al aprobar');
+      } else {
+        setAccessRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: 'approved' } : r));
+      }
+    } catch {
+      alert('Error de conexion');
+    } finally {
+      setApprovingId(null);
+    }
   };
 
   useEffect(() => { loadData(); }, []);
@@ -35,15 +57,15 @@ export default function AdminPage() {
     return new Date(d).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
-  const handleToggleGamma = async (userId, currentValue) => {
+  const handleToggleField = async (userId, field, currentValue) => {
     try {
       const res = await fetch(`/api/admin/users/${userId}/gamma`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gamma_enabled: !currentValue }),
+        body: JSON.stringify({ [field]: !currentValue }),
       });
       if (res.ok) {
-        setUsers(users.map(u => u.id === userId ? { ...u, gamma_enabled: !currentValue } : u));
+        setUsers(users.map(u => u.id === userId ? { ...u, [field]: !currentValue } : u));
       }
     } catch { /* silent */ }
   };
@@ -179,10 +201,68 @@ export default function AdminPage() {
           >
             Casos de uso ({useCases.length})
           </button>
+          <button
+            onClick={() => setTab('requests')}
+            className={`px-5 py-2 rounded-lg text-sm font-semibold cursor-pointer transition-all flex items-center gap-2 ${tab === 'requests' ? 'bg-brand-blue text-white' : 'text-brand-gray-mid hover:text-brand-navy-text'}`}
+          >
+            Solicitudes
+            {accessRequests.filter(r => r.status === 'pending').length > 0 && (
+              <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${tab === 'requests' ? 'bg-white/20 text-white' : 'bg-brand-orange text-white'}`}>
+                {accessRequests.filter(r => r.status === 'pending').length}
+              </span>
+            )}
+          </button>
         </div>
 
         {loading ? (
           <p className="text-brand-text-muted">Cargando...</p>
+        ) : tab === 'requests' ? (
+          /* Access Requests Table */
+          <div className="bg-white rounded-2xl border border-brand-border shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-brand-border bg-brand-page-bg">
+                    <th className="text-left px-5 py-3 font-semibold text-brand-navy-text">Empresa</th>
+                    <th className="text-left px-5 py-3 font-semibold text-brand-navy-text">Email</th>
+                    <th className="text-left px-5 py-3 font-semibold text-brand-navy-text">Teléfono / WhatsApp</th>
+                    <th className="text-left px-5 py-3 font-semibold text-brand-navy-text">Estado</th>
+                    <th className="text-left px-5 py-3 font-semibold text-brand-navy-text">Fecha</th>
+                    <th className="text-right px-5 py-3 font-semibold text-brand-navy-text">Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {accessRequests.map((r) => (
+                    <tr key={r.id} className="border-b border-brand-border last:border-0 hover:bg-brand-page-bg/50">
+                      <td className="px-5 py-3 font-medium text-brand-navy-text">{r.empresa}</td>
+                      <td className="px-5 py-3 text-brand-text-muted">{r.email}</td>
+                      <td className="px-5 py-3 text-brand-text-muted">{r.telefono}</td>
+                      <td className="px-5 py-3">
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${r.status === 'approved' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
+                          {r.status === 'approved' ? 'Aprobado' : 'Pendiente'}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 text-brand-gray-mid text-xs">{formatDate(r.created_at)}</td>
+                      <td className="px-5 py-3 text-right">
+                        {r.status === 'pending' && (
+                          <button
+                            onClick={() => handleApprove(r.id)}
+                            disabled={approvingId === r.id}
+                            className="text-xs font-semibold text-brand-blue hover:text-brand-blue-med cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            {approvingId === r.id ? 'Aprobando...' : 'Aprobar'}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {accessRequests.length === 0 && (
+                    <tr><td colSpan={6} className="px-5 py-8 text-center text-brand-text-muted">No hay solicitudes de acceso aun</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         ) : tab === 'users' ? (
           /* Users Table */
           <div className="bg-white rounded-2xl border border-brand-border shadow-sm overflow-hidden">
@@ -194,7 +274,9 @@ export default function AdminPage() {
                     <th className="text-left px-5 py-3 font-semibold text-brand-navy-text">Email</th>
                     <th className="text-left px-5 py-3 font-semibold text-brand-navy-text">Rol</th>
                     <th className="text-left px-5 py-3 font-semibold text-brand-navy-text">Estado</th>
-                    <th className="text-center px-5 py-3 font-semibold text-brand-navy-text">Gamma</th>
+                    <th className="text-center px-3 py-3 font-semibold text-brand-navy-text text-xs">Deck</th>
+                    <th className="text-center px-3 py-3 font-semibold text-brand-navy-text text-xs">Talk Track</th>
+                    <th className="text-center px-3 py-3 font-semibold text-brand-navy-text text-xs">Informe</th>
                     <th className="text-left px-5 py-3 font-semibold text-brand-navy-text">Registro</th>
                     <th className="text-right px-5 py-3 font-semibold text-brand-navy-text">Acciones</th>
                   </tr>
@@ -214,15 +296,39 @@ export default function AdminPage() {
                           {u.verified ? 'Activo' : 'Pendiente'}
                         </span>
                       </td>
-                      <td className="px-5 py-3 text-center">
+                      <td className="px-3 py-3 text-center">
                         {u.role === 'admin' ? (
-                          <span className="text-xs text-brand-orange font-semibold">Siempre</span>
+                          <span className="text-xs text-brand-orange font-semibold">Si</span>
                         ) : (
                           <button
-                            onClick={() => handleToggleGamma(u.id, u.gamma_enabled)}
-                            className={`relative inline-flex h-5 w-9 items-center rounded-full cursor-pointer transition-colors ${u.gamma_enabled ? 'bg-brand-blue' : 'bg-gray-300'}`}
+                            onClick={() => handleToggleField(u.id, 'deck_enabled', u.deck_enabled)}
+                            className={`relative inline-flex h-5 w-9 items-center rounded-full cursor-pointer transition-colors ${u.deck_enabled ? 'bg-brand-blue' : 'bg-gray-300'}`}
                           >
-                            <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${u.gamma_enabled ? 'translate-x-4.5' : 'translate-x-0.5'}`} />
+                            <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${u.deck_enabled ? 'translate-x-4.5' : 'translate-x-0.5'}`} />
+                          </button>
+                        )}
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        {u.role === 'admin' ? (
+                          <span className="text-xs text-brand-orange font-semibold">Si</span>
+                        ) : (
+                          <button
+                            onClick={() => handleToggleField(u.id, 'talktrack_enabled', u.talktrack_enabled)}
+                            className={`relative inline-flex h-5 w-9 items-center rounded-full cursor-pointer transition-colors ${u.talktrack_enabled ? 'bg-brand-blue' : 'bg-gray-300'}`}
+                          >
+                            <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${u.talktrack_enabled ? 'translate-x-4.5' : 'translate-x-0.5'}`} />
+                          </button>
+                        )}
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        {u.role === 'admin' ? (
+                          <span className="text-xs text-brand-orange font-semibold">Si</span>
+                        ) : (
+                          <button
+                            onClick={() => handleToggleField(u.id, 'market_report_enabled', u.market_report_enabled)}
+                            className={`relative inline-flex h-5 w-9 items-center rounded-full cursor-pointer transition-colors ${u.market_report_enabled ? 'bg-brand-blue' : 'bg-gray-300'}`}
+                          >
+                            <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${u.market_report_enabled ? 'translate-x-4.5' : 'translate-x-0.5'}`} />
                           </button>
                         )}
                       </td>
